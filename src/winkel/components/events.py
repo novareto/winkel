@@ -36,4 +36,4 @@ class Subscribers(ItemsContainer):
 
     def notify(self, *args, **kwargs):
         for handler in self.match_all(*args):
-            yield handler(*args, **kwargs)
+            handler(*args, **kwargs)

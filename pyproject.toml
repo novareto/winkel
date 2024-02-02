@@ -12,6 +12,8 @@ requires-python = ">=3.10"
 classifiers = ["License :: OSI Approved :: MIT License"]
 dependencies = [
   "horseman",
+  "autoroutes",
+  "chameleon",
   "plum_dispatch",
   "prejudice",
   "frozendict",
