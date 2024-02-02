@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "winkel"
+version = "0.1"
+authors = [
+    {name = "Souheil Chelfouh", email = "sch@treegital.fr"},
+]
+requires-python = ">=3.10"
+classifiers = ["License :: OSI Approved :: MIT License"]
+dependencies = [
+  "horseman",
+  "plum_dispatch",
+  "prejudice",
+  "frozendict",
+  "orjson",
+  "dataclasses_jsonschema",
+  "sqlalchemy",
+  "wrapt"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["winkel"]
+namespaces = false
