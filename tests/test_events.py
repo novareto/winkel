@@ -24,6 +24,11 @@ def context_event(context, request):
     print('I was matched')
 
 
+@subs1.register((Context, Request))
+def context_event2(context, request):
+    print('I was matched with the same signature')
+
+
 @subs1.register((SubContext, Request))
 def context_event2(context, request):
     print('I was matched too')
