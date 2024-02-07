@@ -1,9 +1,8 @@
 import autoroutes
 import typing as t
 from http import HTTPStatus
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from prejudice.types import Predicate
-from horseman.meta import Overhead, Environ
 from horseman.types import WSGICallable, HTTPMethod
 from horseman.http import HTTPError
 from winkel.items import Item, ItemMapping

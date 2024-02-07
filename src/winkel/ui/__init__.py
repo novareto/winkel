@@ -31,7 +31,10 @@ class NamedComponent:
     def get(self, *args, name=""):
         return self.store.lookup(name, *args)
 
-    def register(self, name: str | Default, discriminant: t.Iterable[t.Type], **kws):
+    def register(self,
+                 name: str | Default,
+                 discriminant: t.Iterable[t.Type],
+                 **kws):
         def register_component(func):
             self.create(func, discriminant, name=name, **kws)
             return func
@@ -44,6 +47,7 @@ class NamedComponent:
                 f"and {other.__class__!r}"
             )
         return self.__class__(self.store | other.store)
+
 
 class UI:
 

@@ -4,34 +4,36 @@ import typing as t
 from functools import reduce
 
 
-I = t.TypeVar('I')
+C = t.TypeVar('C')
 
 
-class PriorityChain(t.Generic[I]):
+class PriorityChain(t.Generic[C]):
 
     __slots__ = ('_chain',)
 
-    _chain: t.List[t.Tuple[int, I]]
+    _chain: t.List[t.Tuple[int, C]]
 
-    def __init__(self, *items: I):
-        self._chain = list(enumerate(items))
+    def __init__(self, *components: C):
+        self._chain = list(enumerate(components))
 
     def __iter__(self):
         return iter(self._chain)
 
-    def add(self, item: I, order: int = 0):
-        insert = (order, item)
+    def add(self, component: C, order: int = 0):
+        insert = (order, component)
         if not self._chain:
             self._chain = [insert]
         elif insert in self._chain:
-            raise KeyError('Item {item!r} already exists at #{order}.')
+            raise KeyError(
+                'Component {component!r} already exists at #{order}.')
         else:
             bisect.insort(self._chain, insert)
 
-    def remove(self, item: I, order: int):
-        insert = (order, item)
+    def remove(self, component: C, order: int):
+        insert = (order, component)
         if insert not in self._chain:
-            raise KeyError('Item {item!r} doest not exist at #{order}.')
+            raise KeyError(
+                'Component {component!r} doest not exist at #{order}.')
         self._chain.remove(insert)
 
     def clear(self):

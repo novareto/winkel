@@ -37,7 +37,10 @@ class Actions(ItemsContainer):
                 actions[action.name] = action
         return actions
 
-    def register(self, discriminant: t.Iterable[t.Type], name: str="", **kwargs):
+    def register(self,
+                 discriminant: t.Iterable[t.Type],
+                 name: str = "",
+                 **kwargs):
         def register_event_handler(func):
             self.create(func, discriminant, name=name, **kwargs)
             return func

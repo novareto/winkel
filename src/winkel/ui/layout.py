@@ -7,4 +7,8 @@ class Layout:
         self.template = template
 
     def render(self, content: str, **namespace):
-        return self.template.render(content=content, layout=self, **namespace)
+        return self.template.render(
+            content=content,
+            layout=self,
+            **namespace
+        )

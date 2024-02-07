@@ -26,6 +26,7 @@ class Subscribers(ItemsContainer):
 
     def match_all(self, *args):
         found = []
+
         def sorting_key(handler):
             return handler.identifier, handler.metadata.get('order', 1000)
 

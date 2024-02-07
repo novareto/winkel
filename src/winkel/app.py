@@ -6,11 +6,13 @@ from horseman.mapping import Mapping
 from horseman.response import Response
 from horseman.http import HTTPError
 from horseman.types import Environ, ExceptionInfo
-from winkel.components import Actions, Subscribers, Contents, Router, VersionStore
 from winkel.request import Request
 from winkel.database import Database
 from winkel.pipeline import Pipeline
 from winkel.ui import UI
+from winkel.components import (
+    Actions, Subscribers, Contents, Router, VersionStore
+)
 
 
 class Mounting(Mapping):
@@ -50,4 +52,6 @@ class Application(horseman.meta.SentryNode):
             if (mounted := self.mounts.resolve(path, environ)) is not None:
                 return mounted.resolve(path, environ)
         request = self.request_factory(self, environ)
-        return self.pipeline.wrap(self.endpoint, MappingProxyType(self.config))(request)
+        return self.pipeline.wrap(
+            self.endpoint, MappingProxyType(self.config)
+        )(request)

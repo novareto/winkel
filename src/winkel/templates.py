@@ -77,6 +77,10 @@ class Templates(t.Mapping[str, template.PageTemplate]):
                 f'Cannot merge {self.__class__!r} with {reg.__class__!r}.')
         templates = self.__class__()
         templates.registry = self.registry | reg.registry
-        # ensure cache consistency. Merged cache should have precedence on merged overriding templates
-        templates.cache = {p: t for p, t in self.cache.items() if p not in reg.registry} | reg.cache
+
+        # ensure cache consistency.
+        # Merged cache should have precedence on merged overriding templates
+        templates.cache = {
+            p: t for p, t in self.cache.items() if p not in reg.registry
+        } | reg.cache
         return templates
