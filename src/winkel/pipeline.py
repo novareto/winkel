@@ -2,7 +2,6 @@ import abc
 import bisect
 import typing as t
 from functools import reduce
-from horseman.response import Response
 
 
 I = t.TypeVar('I')

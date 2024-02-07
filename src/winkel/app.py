@@ -4,6 +4,7 @@ from types import MappingProxyType
 from dataclasses import dataclass, field
 from horseman.mapping import Mapping
 from horseman.response import Response
+from horseman.http import HTTPError
 from horseman.types import Environ, ExceptionInfo
 from winkel.components import Actions, Subscribers, Contents, Router, VersionStore
 from winkel.request import Request

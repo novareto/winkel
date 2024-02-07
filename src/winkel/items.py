@@ -1,7 +1,7 @@
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from prejudice.errors import ConstraintError, ConstraintsErrors
+from prejudice.errors import ConstraintsErrors
 from prejudice.types import Predicate
 from prejudice.utils import resolve_constraints
 from plum import Signature
