@@ -17,32 +17,24 @@ class Lookup(Enum):
 
 class Components(ItemsContainer):
     store: ItemResolver
-    default_name: str
 
-    def __init__(self,
-                 store: t.Optional[ItemResolver] = None,
-                 default_name: str = DEFAULT):
+    def __init__(self, store: t.Optional[ItemResolver] = None):
         if store is None:
             store = ItemResolver()
         self.store = store
-        self.default_name = default_name
 
     def create(self,
                value: t.Any,
                discriminant: t.Iterable[t.Type],
-               name: str | None = None,
+               name: str = DEFAULT,
                **kwargs):
-        if name is None:
-            name = self.default_name
         signature = Signature(
             *discriminant,
             t.Literal[name] | t.Literal[Lookup.ALL]
         )
         return self.store.create(value, signature, name=name, **kwargs)
 
-    def get(self, *args, name: str | None = None):
-        if name is None:
-            name = self.default_name
+    def get(self, *args, name: str = DEFAULT):
         return self.store.lookup(*args, name)
 
     def match_all(self, *args):
@@ -54,15 +46,11 @@ class Components(ItemsContainer):
 
     def register(self,
                  discriminant: t.Iterable[t.Type],
-                 name: str | None = None,
+                 name: str = DEFAULT,
                  **kwargs):
-        if name is None:
-            name = self.default_name
-
         def register_event_handler(func):
             self.create(func, discriminant, name=name, **kwargs)
             return func
-
         return register_event_handler
 
 
@@ -70,26 +58,20 @@ class NamedComponents(ItemsContainer):
 
     store: ItemResolver
 
-    def __init__(self, store: t.Optional[ItemResolver] = None,
-                 default_name: str = DEFAULT):
+    def __init__(self, store: t.Optional[ItemResolver] = None):
         if store is None:
             store = ItemResolver()
         self.store = store
-        self.default_name = default_name
 
     def create(self,
                value: t.Any,
                discriminant: t.Iterable[t.Type],
-               name: str | None = None,
+               name: str = DEFAULT,
                **kwargs):
-        if name is None:
-            name = self.default_name
         signature = Signature(t.Literal[name], *discriminant)
         return self.store.create(value, signature, name=name, **kwargs)
 
-    def get(self, *args, name: str | None = None):
-        if name is None:
-            name = self.default_name
+    def get(self, *args, name: str = DEFAULT):
         return self.store.lookup(name, *args)
 
     def register(self,
