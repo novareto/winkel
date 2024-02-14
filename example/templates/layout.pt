@@ -1,0 +1,9 @@
+<html>
+  <head>
+  </head>
+  <body>
+    <h1>My website</h1>
+    <div tal:replace="structure slot: globalmenu" />
+    <div tal:content="structure content" />
+  </body>
+</html>
