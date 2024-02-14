@@ -53,6 +53,10 @@ def ui_endpoint(wrapped=None, *, layout_name: str = ""):
         if not isinstance(content, str):
             raise TypeError('Do not know how to render.')
 
+        request = args[0]
+        ui = request.app.ui
+        ui.inject_resources()
+
         return Response(
             200,
             body=content,
@@ -70,6 +74,7 @@ def ui_endpoint(wrapped=None, *, layout_name: str = ""):
 
         request = args[0]
         ui = request.app.ui
+        ui.inject_resources()
 
         namespace = {
             'request': request,

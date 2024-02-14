@@ -7,6 +7,8 @@ from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.request import Request
 from horseman.meta import APIView
 from horseman.response import Response
+from fanstatic import Fanstatic
+from js.jquery import jquery
 
 
 app = Application()
@@ -16,6 +18,7 @@ EXPRESSION_TYPES['slot'] = SlotExpr
 
 app.ui.layouts.create(Layout(templates['layout']), (Request,), "")
 app.ui.templates |= templates
+app.ui.resources.add(jquery)
 
 
 @app.router.register('/')
@@ -61,3 +64,6 @@ def example_slot(request, manager, view, context):
 @app.ui.slots.register((Request, GlobalMenu, Any, Any), name='titi')
 def example_slot2(request, manager, view, context):
     return "This is some other slot"
+
+
+wsgi_app = Fanstatic(app)

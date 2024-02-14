@@ -18,9 +18,8 @@ dependencies = [
   "prejudice",
   "frozendict",
   "orjson",
-  "dataclasses_jsonschema",
-  "sqlalchemy",
-  "wrapt"
+  "wrapt",
+  "fanstatic",
 ]
 
 [tool.setuptools.packages.find]
