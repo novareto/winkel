@@ -1,11 +1,11 @@
 import ast
-import horseman.meta
 from typing import Callable, Any
 from chameleon.codegen import template
 from chameleon.astutil import Symbol
+from winkel.request import Environ
 
 
-Slot = Callable[[horseman.meta.Overhead, str, Any], str]
+Slot = Callable[[Environ, str, Any], str]
 
 
 def query_slot(econtext, name):

@@ -5,7 +5,6 @@ from winkel.ui.layout import Layout
 from winkel.ui.slot import SlotExpr
 from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.request import Request
-from horseman.meta import APIView
 from horseman.response import Response
 from fanstatic import Fanstatic
 from js.jquery import jquery
@@ -30,12 +29,11 @@ def index(request):
     }
 
 
-
 @app.router.register('/person/{uid}')
 @ui_endpoint
 def person(request):
-    params = request.cxt.get('params')
-    data = request.cxt.get('data')
+    params = request.get('params')
+    data = request.get('data')
     return str(params) + str(data)
 
 

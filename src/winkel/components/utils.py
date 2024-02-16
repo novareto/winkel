@@ -2,8 +2,8 @@ import inspect
 import orjson
 import typing as t
 from pathlib import Path
-from horseman.types import HTTPMethod
-from horseman.meta import APIView, WSGICallable
+from horseman.types import HTTPMethod, WSGICallable
+from winkel.components.view import APIView
 from winkel.items import Item
 
 

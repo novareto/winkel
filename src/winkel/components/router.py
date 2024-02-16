@@ -4,7 +4,7 @@ from http import HTTPStatus
 from dataclasses import dataclass
 from prejudice.types import Predicate
 from horseman.types import WSGICallable, HTTPMethod
-from horseman.http import HTTPError
+from horseman.exceptions import HTTPError
 from winkel.items import Item, ItemMapping
 from winkel.request import Request
 from winkel.components.utils import get_routables

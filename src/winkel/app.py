@@ -1,19 +1,17 @@
 import typing as t
-import horseman.meta
 from types import MappingProxyType
 from dataclasses import dataclass, field
-from horseman.mapping import Mapping
-from horseman.response import Response
-from horseman.http import HTTPError
-from horseman.types import Environ, ExceptionInfo
-from winkel.request import Query, Request, User
-from winkel.pipeline import Pipeline
-from winkel.ui import UI
-from winkel.components import Subscribers, Router, MatchedRoute, Params
-from horseman.types import Environ
-from rodi import Container, ActivationScope
-from horseman.http import Cookies
+from horseman.datastructures import Cookies
+from horseman.exceptions import HTTPError
+from horseman.mapping import Mapping, Node, RootNode
 from horseman.parsers import Data
+from horseman.response import Response
+from horseman.types import Environ, ExceptionInfo
+from rodi import Container, ActivationScope
+from winkel.components import Subscribers, Router, MatchedRoute, Params
+from winkel.pipeline import Pipeline
+from winkel.request import Query, Request, User, Environ
+from winkel.ui import UI
 
 
 Config = t.Mapping[str, t.Any]
@@ -21,18 +19,13 @@ Config = t.Mapping[str, t.Any]
 
 class Mounting(Mapping):
 
-    def add(self, app: horseman.meta.Node, path: str):
+    def add(self, app: Node, path: str):
         self[path] = app
 
 
 def get_query(context) -> Query:
-    request = context.get(Request)
-    return request.query
-
-
-def get_user(context) -> User:
-    request = context.get(Request)
-    return request.user
+    request = context.get(Environ)
+    return environ.query
 
 
 def get_params(context) -> Params:
@@ -41,17 +34,17 @@ def get_params(context) -> Params:
 
 
 def get_cookies(context) -> Cookies:
-    request = context.get(Request)
-    return request.cookies
+    environ = context.get(Environ)
+    return environ.cookies
 
 
 def get_form_data(context) -> Data:
-    request = context.get(Request)
-    return request.extract()
+    environ = context.get(Environ)
+    return environ.extract()
 
 
 @dataclass(kw_only=True)
-class Application(horseman.meta.SentryNode):
+class Application(RootNode):
 
     name: str = ''
     ui: UI = field(default_factory=UI)
@@ -68,7 +61,7 @@ class Application(horseman.meta.SentryNode):
         self.services.register(UI, instance=self.ui)
         self.services.register(Config, instance=self.config)
         self.services.add_scoped_by_factory(get_query)
-        self.services.add_scoped_by_factory(get_user)
+        self.services.add_scoped_by_factory(get_cookies)
         self.services.add_scoped_by_factory(get_params)
         self.services.add_scoped_by_factory(get_form_data)
 
@@ -76,17 +69,15 @@ class Application(horseman.meta.SentryNode):
         pass
 
     def endpoint(self, request) -> Response:
-        route = self.router.match(request.path, request.method)
+        route = self.router.match(
+            request.environ.path,
+            request.environ.method
+        )
         if route is None:
             raise HTTPError(404)
 
-        scoped_services = {
-            MatchedRoute: route,
-            Request: request
-        }
-        with ActivationScope(
-                self.services.provider, scoped_services) as context:
-            request.cxt = context
+        request.scoped_services[MatchedRoute] = route
+        with request:
             return route(request)
 
     def resolve(self, path: str, environ: Environ) -> Response:
@@ -94,7 +85,7 @@ class Application(horseman.meta.SentryNode):
             if (mounted := self.mounts.resolve(path, environ)) is not None:
                 return mounted.resolve(path, environ)
 
-        request = self.request_factory(environ)
+        request = self.request_factory(environ, self.services.provider)
         return self.pipeline.wrap(
             self.endpoint, MappingProxyType(self.config)
         )(request)

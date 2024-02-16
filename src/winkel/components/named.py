@@ -1,7 +1,6 @@
 import typing as t
 from enum import Enum
 from plum import Signature
-from horseman.meta import Overhead
 from chameleon.zpt import template
 from winkel.items import ItemResolver, ItemsContainer
 from winkel.templates import Templates

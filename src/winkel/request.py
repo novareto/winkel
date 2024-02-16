@@ -2,12 +2,16 @@ import abc
 import typing as t
 import urllib.parse
 import horseman.parsers
+import horseman.datastructures
 import horseman.types
-import horseman.http
-import horseman.meta
+import wrapt
 from functools import cached_property
 from horseman.parsers import Data
 from winkel.datastructures import TypeCastingDict
+from rodi import ActivationScope, Services
+
+
+T = t.TypeVar("T")
 
 
 class Query(TypeCastingDict):
@@ -29,64 +33,43 @@ class User(abc.ABC):
     id: t.Union[str, int]
 
 
-class Request(horseman.meta.Overhead):
+class Environ(dict):
 
-    content_type: t.Optional[horseman.http.ContentType]
-    cookies: horseman.http.Cookies
-    environ: horseman.types.Environ
-    method: horseman.types.HTTPMethod
-    path: str
-    query: Query
-    script_name: str
-    _data: t.Optional[horseman.parsers.Data]
-
-    def __init__(self, environ: horseman.types.Environ):
-        self.cxt = None
-        self._data = ...
-        self.environ = environ
-        self.method = environ.get('REQUEST_METHOD', 'GET').upper()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.method = self.get('REQUEST_METHOD', 'GET').upper()
         self.script_name = urllib.parse.quote(
-            environ.get('SCRIPT_NAME', '')
+            self.get('SCRIPT_NAME', '')
         )
-
-    def extract(self) -> horseman.parsers.Data:
-        if self._data is not ...:
-            return self._data
-
-        if self.content_type:
-            self._data = horseman.parsers.parser(
-                self.environ['wsgi.input'], self.content_type)
-        else:
-            self._data = Data()
-        return self._data
 
     @cached_property
     def path(self) -> str:
-        if path := self.environ.get('PATH_INFO'):
+        if path := self.get('PATH_INFO'):
             return path.encode('latin-1').decode('utf-8')
         return '/'
 
     @cached_property
     def query(self) -> Query:
-        return Query.from_environ(self.environ)
+        return Query.from_environ(self)
 
     @cached_property
-    def cookies(self) -> horseman.http.Cookies:
-        return horseman.http.Cookies.from_environ(self.environ)
+    def cookies(self) -> horseman.datastructures.Cookies:
+        return horseman.datastructures.Cookies.from_environ(self)
 
     @cached_property
-    def content_type(self) -> t.Optional[horseman.http.ContentType]:
-        if 'CONTENT_TYPE' in self.environ:
-            return horseman.http.ContentType.from_http_header(
-                self.environ['CONTENT_TYPE'])
+    def content_type(self) -> horseman.datastructures.ContentType | None:
+        if 'CONTENT_TYPE' in self:
+            return horseman.datastructures.ContentType.from_http_header(
+                self['CONTENT_TYPE']
+            )
 
     @cached_property
     def application_uri(self):
-        scheme = self.environ.get('wsgi.url_scheme', 'http')
-        http_host = self.environ.get('HTTP_HOST')
+        scheme = self.get('wsgi.url_scheme', 'http')
+        http_host = self.get('HTTP_HOST')
         if not http_host:
-            server = self.environ['SERVER_NAME']
-            port = self.environ.get('SERVER_PORT', '80')
+            server = self['SERVER_NAME']
+            port = self.get('SERVER_PORT', '80')
         elif ':' in http_host:
             server, port = http_host.split(':', 1)
         else:
@@ -100,12 +83,38 @@ class Request(horseman.meta.Overhead):
 
     def uri(self, include_query=True):
         url = self.application_uri
-        path_info = urllib.parse.quote(self.environ.get('PATH_INFO', ''))
+        path_info = urllib.parse.quote(self.get('PATH_INFO', ''))
         if include_query:
-            qs = urllib.parse.quote(self.environ.get('QUERY_STRING', ''))
+            qs = urllib.parse.quote(self.get('QUERY_STRING', ''))
             if qs:
                 return f"{url}{path_info}?{qs}"
         return f"{url}{path_info}"
+
+    def extract(self) -> horseman.parsers.Data:
+        if '__EXTRACTED__' in self:
+            return self['__EXTRACTED__']
+        if self.content_type:
+            data = horseman.parsers.parser(
+                self['wsgi.input'], self.content_type)
+        else:
+            data = Data()
+        self['__EXTRACTED__'] = data
+        return data
+
+
+class Request(ActivationScope):
+
+    def __init__(self,
+                 environ: horseman.types.Environ,
+                 provider: Services | None = None,
+                 scoped_services: t.Dict[t.Type[T] | str, T] | None = None):
+        self.environ = Environ(environ)
+        self.provider = provider or Services()
+        if scoped_services is None:
+            scoped_services = {}
+        scoped_services[Request] = self
+        scoped_services[Environ] = self.environ
+        self.scoped_services = scoped_services
 
 
 __all__ = ['Request', 'Query']

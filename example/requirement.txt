@@ -1,4 +1,4 @@
 fanstatic
-horseman
+horseman@git+ssh://github.com/HorsemanWSGI/horseman.git
 js.jquery
 winkel

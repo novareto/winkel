@@ -5,7 +5,6 @@ from horseman.response import Response
 from chameleon.zpt.template import PageTemplate
 from winkel.request import Request
 from winkel.ui import UI
-from rodi import ActivationScope
 
 
 def template(template: PageTemplate | str):
@@ -20,7 +19,7 @@ def template(template: PageTemplate | str):
             raise TypeError(f'Do not know how to render {content!r}.')
 
         request = args[0]
-        ui = request.cxt.get(UI)
+        ui = request.get(UI)
 
         namespace = {
             'request': request,
@@ -55,7 +54,7 @@ def ui_endpoint(wrapped=None, *, layout_name: str = ""):
             raise TypeError('Do not know how to render.')
 
         request = args[0]
-        ui = request.cxt.get(UI)
+        ui = request.get(UI)
         ui.inject_resources()
 
         return Response(
@@ -74,7 +73,7 @@ def ui_endpoint(wrapped=None, *, layout_name: str = ""):
             raise TypeError('Do not know how to render.')
 
         request = args[0]
-        ui = request.cxt.get(UI)
+        ui = request.get(UI)
         ui.inject_resources()
 
         namespace = {

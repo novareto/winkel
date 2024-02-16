@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from typing import Literal, Set
 from plum import Signature
 from fanstatic import Group, Resource
-from horseman.meta import Overhead
 from chameleon.zpt import template
 from winkel.items import ItemResolver
 from winkel.templates import Templates
