@@ -20,7 +20,10 @@ dependencies = [
   "plum_dispatch",
   "prejudice",
   "rodi",
-  "wrapt"
+  "wrapt",
+  "itsdangerous",
+  "http_session",
+  "transaction",
 ]
 
 [tool.setuptools.packages.find]

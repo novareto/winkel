@@ -1,0 +1,38 @@
+import typing as t
+from transaction import TransactionManager
+from winkel.pipeline import Handler
+from horseman.response import Response
+from winkel.markers import Marker
+
+
+TransactionFactory = t.Callable[[], TransactionManager]
+
+
+class Transactional:
+
+    def __init__(self, factory: TransactionFactory = TransactionManager):
+        self.factory = factory
+
+    def __call__(self, handler: Handler, globalconf: t.Mapping | None = None):
+
+        def transaction_middleware(request):
+            manager = request.get(TransactionManager)
+            if manager is Marker.missing:
+                manager = self.factory()
+                request.register(TransactionManager, manager)
+
+            txn = manager.begin()
+            try:
+                response = handler(request)
+                if txn.isDoomed() or (
+                        isinstance(response, Response)
+                        and response.status >= 400):
+                    txn.abort()
+                else:
+                    txn.commit()
+                return response
+            except Exception:
+                txn.abort()
+                raise
+
+        return transaction_middleware

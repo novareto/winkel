@@ -77,8 +77,7 @@ class Application(RootNode):
             raise HTTPError(404)
 
         request.scoped_services[MatchedRoute] = route
-        with request:
-            return route(request)
+        return route(request)
 
     def resolve(self, path: str, environ: Environ) -> Response:
         if self.mounts:
@@ -86,6 +85,7 @@ class Application(RootNode):
                 return mounted.resolve(path, environ)
 
         request = self.request_factory(environ, self.services.provider)
-        return self.pipeline.wrap(
-            self.endpoint, MappingProxyType(self.config)
-        )(request)
+        with request:
+            return self.pipeline.wrap(
+                self.endpoint, MappingProxyType(self.config)
+            )(request)

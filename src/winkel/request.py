@@ -8,7 +8,8 @@ import wrapt
 from functools import cached_property
 from horseman.parsers import Data
 from winkel.datastructures import TypeCastingDict
-from rodi import ActivationScope, Services
+from winkel.markers import Marker
+from rodi import ActivationScope, Services, CannotResolveTypeException
 
 
 T = t.TypeVar("T")
@@ -50,17 +51,21 @@ class Environ(dict):
 
     @cached_property
     def query(self) -> Query:
-        return Query.from_environ(self)
+        return Query.from_string(
+            self.get('QUERY_STRING', '')
+        )
 
     @cached_property
     def cookies(self) -> horseman.datastructures.Cookies:
-        return horseman.datastructures.Cookies.from_environ(self)
+        return horseman.datastructures.Cookies.from_string(
+            self.get('HTTP_COOKIE', '')
+        )
 
     @cached_property
     def content_type(self) -> horseman.datastructures.ContentType | None:
         if 'CONTENT_TYPE' in self:
-            return horseman.datastructures.ContentType.from_http_header(
-                self['CONTENT_TYPE']
+            return horseman.datastructures.ContentType(
+                self.get('CONTENT_TYPE', '')
             )
 
     @cached_property
@@ -112,9 +117,15 @@ class Request(ActivationScope):
         self.provider = provider or Services()
         if scoped_services is None:
             scoped_services = {}
-        scoped_services[Request] = self
-        scoped_services[Environ] = self.environ
         self.scoped_services = scoped_services
+        self.register(Request, self)
+        self.register(Environ, self.environ)
+
+    def register(self, key: t.Type[T] | str, value: T):
+        self.scoped_services[key] = value
+
+    def __contains__(self, key):
+        return key in self.scoped_services
 
 
 __all__ = ['Request', 'Query']

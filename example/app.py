@@ -8,6 +8,11 @@ from winkel.request import Request
 from horseman.response import Response
 from fanstatic import Fanstatic
 from js.jquery import jquery
+from winkel.pipes import Transactional, HTTPSession
+from http_session.session import Session
+from transaction import TransactionManager
+import http_session_file
+import pathlib
 
 
 app = Application()
@@ -18,6 +23,17 @@ EXPRESSION_TYPES['slot'] = SlotExpr
 app.ui.layouts.create(Layout(templates['layout']), (Request,), "")
 app.ui.templates |= templates
 app.ui.resources.add(jquery)
+
+Transactional().install(app, 10)
+HTTPSession(
+    store=http_session_file.FileStore(
+        pathlib.Path('./sessions'), 300),
+    secret="secret",
+    salt="salt",
+    cookie_name="cookie_name",
+    secure=False,
+    TTL=300
+).install(app, 20)
 
 
 @app.router.register('/')
@@ -34,7 +50,10 @@ def index(request):
 def person(request):
     params = request.get('params')
     data = request.get('data')
-    return str(params) + str(data)
+    transaction = request.get(TransactionManager)
+    session = request.get(Session)
+    session['test'] = session.get('test', 0) + 1
+    return str(params) + str(data) + str(transaction) + str(session)
 
 
 
