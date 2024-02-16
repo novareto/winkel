@@ -76,7 +76,7 @@ class Application(RootNode):
         if route is None:
             raise HTTPError(404)
 
-        request.scoped_services[MatchedRoute] = route
+        request.register(MatchedRoute, route)
         return route(request)
 
     def resolve(self, path: str, environ: Environ) -> Response:

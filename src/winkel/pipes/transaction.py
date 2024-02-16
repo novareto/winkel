@@ -12,7 +12,9 @@ class Transactional(MiddlewareFactory):
         )
 
     def factory(self, context) -> TransactionManager:
-        return self.config.factory()
+        manager = self.config.factory()
+        manager.begin()
+        return manager
 
     def install(self, app, order: int):
         app.services.add_scoped_by_factory(self.factory)
@@ -21,10 +23,9 @@ class Transactional(MiddlewareFactory):
     def __call__(self, handler: Handler, globalconf: t.Mapping | None = None):
 
         def transaction_middleware(request):
-            manager = request.get(TransactionManager)
-            txn = manager.begin()
             try:
                 response = handler(request)
+                txn = request.get(TransactionManager)
                 if txn.isDoomed() or (
                         isinstance(response, Response)
                         and response.status >= 400):
