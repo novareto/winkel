@@ -34,6 +34,7 @@ class Transactional(MiddlewareFactory):
                     txn.commit()
                 return response
             except Exception:
+                txn = request.get(TransactionManager)
                 txn.abort()
                 raise
 
