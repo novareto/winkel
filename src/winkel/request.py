@@ -31,31 +31,20 @@ class User(abc.ABC):
 
 class Request(horseman.meta.Overhead):
 
-    app: horseman.meta.Node
     content_type: t.Optional[horseman.http.ContentType]
     cookies: horseman.http.Cookies
     environ: horseman.types.Environ
     method: horseman.types.HTTPMethod
     path: str
     query: Query
-    route: t.Optional[horseman.types.WSGICallable]
     script_name: str
     _data: t.Optional[horseman.parsers.Data]
 
-    def __init__(self,
-                 app: horseman.meta.Node,
-                 environ: horseman.types.Environ,
-                 route: t.Optional[horseman.types.WSGICallable] = None,
-                 user: t.Optional[User] = None,
-                 utilities: t.Optional[t.Mapping[str, t.Any]] = None
-                 ):
-        self.app = app
-        self.user = user
-        self.utilities = utilities is not None and utilities or {}
+    def __init__(self, environ: horseman.types.Environ):
+        self.cxt = None
         self._data = ...
         self.environ = environ
         self.method = environ.get('REQUEST_METHOD', 'GET').upper()
-        self.route = route
         self.script_name = urllib.parse.quote(
             environ.get('SCRIPT_NAME', '')
         )

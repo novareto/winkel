@@ -30,6 +30,16 @@ def index(request):
     }
 
 
+
+@app.router.register('/person/{uid}')
+@ui_endpoint
+def person(request):
+    params = request.cxt.get('params')
+    data = request.cxt.get('data')
+    return str(params) + str(data)
+
+
+
 @app.router.register('/direct')
 @ui_endpoint
 def direct(request):

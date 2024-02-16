@@ -4,6 +4,8 @@ import typing as t
 from horseman.response import Response
 from chameleon.zpt.template import PageTemplate
 from winkel.request import Request
+from winkel.ui import UI
+from rodi import ActivationScope
 
 
 def template(template: PageTemplate | str):
@@ -17,9 +19,8 @@ def template(template: PageTemplate | str):
         if not isinstance(content, dict):
             raise TypeError(f'Do not know how to render {content!r}.')
 
-        # The first argument of the hanlder needs to be the Request object.
         request = args[0]
-        ui = request.app.ui
+        ui = request.cxt.get(UI)
 
         namespace = {
             'request': request,
@@ -54,7 +55,7 @@ def ui_endpoint(wrapped=None, *, layout_name: str = ""):
             raise TypeError('Do not know how to render.')
 
         request = args[0]
-        ui = request.app.ui
+        ui = request.cxt.get(UI)
         ui.inject_resources()
 
         return Response(
@@ -73,7 +74,7 @@ def ui_endpoint(wrapped=None, *, layout_name: str = ""):
             raise TypeError('Do not know how to render.')
 
         request = args[0]
-        ui = request.app.ui
+        ui = request.cxt.get(UI)
         ui.inject_resources()
 
         namespace = {

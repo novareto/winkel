@@ -8,6 +8,11 @@ from horseman.http import HTTPError
 from winkel.items import Item, ItemMapping
 from winkel.request import Request
 from winkel.components.utils import get_routables
+from rodi import ActivationScope
+
+
+class Params(t.Mapping[str, t.Any], dict):
+    pass
 
 
 @dataclass
@@ -19,21 +24,21 @@ class Route(Item[str, WSGICallable]):
     def path(self) -> str:
         return self.identifier
 
-    def __call__(self, request: Request, **kwargs):
+    def __call__(self, context: ActivationScope):
         if self.conditions:
-            if errors := self.evaluate(request, **kwargs):
+            if errors := self.evaluate(context):
                 raise errors
-        return self.value(request, **kwargs)
+        return self.value(context)
 
 
 class MatchedRoute(t.NamedTuple):
     path: str
     route: Route
     method: HTTPMethod
-    params: t.Mapping[str, t.Any]
+    params: Params
 
-    def __call__(self, request: Request):
-        return self.route(request, **self.params)
+    def __call__(self, context: ActivationScope):
+        return self.route(context)
 
 
 class RouteStore(ItemMapping[t.Tuple[str, HTTPMethod], Route]):
@@ -125,7 +130,7 @@ class Router(RouteStore):
                 path=path,
                 route=route,
                 method=method,
-                params=params
+                params=Params(params)
             )
 
         raise HTTPError(HTTPStatus.METHOD_NOT_ALLOWED)
