@@ -1,0 +1,3 @@
+<div tal:repeat="item items">
+  <div tal:replace="structure item" />
+</div>

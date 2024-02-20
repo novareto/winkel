@@ -1,5 +1,6 @@
 import ast
 from typing import Callable, Any
+from inspect import isclass
 from chameleon.codegen import template
 from chameleon.astutil import Symbol
 from winkel.request import Environ
@@ -18,9 +19,12 @@ def query_slot(econtext, name):
     view = econtext.get('view', object())
     context = econtext.get('context', object())
     try:
-        manager = ui.slots.get(request, view, context, name=name)()
+        manager = ui.slots.get(request, view, context, name=name)
+        if isclass(manager.value):
+            manager = manager()
         slots = ui.slots.match_all(request, manager, view, context)
-        return manager.render(request, view, context, slots.values())
+        return manager(request, view, context, slots.values())
+
     except LookupError:
         # No slot found. We don't render anything.
         return None

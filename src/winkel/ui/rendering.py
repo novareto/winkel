@@ -79,7 +79,7 @@ def ui_endpoint(wrapped=None, *, layout_name: str = ""):
         namespace = {
             'request': request,
             'ui': ui,
-            'macros': ui.macros,
+            'macros': ui.macros
         }
 
         if instance:

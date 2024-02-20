@@ -1,16 +1,17 @@
 import typing as t
 from types import MappingProxyType
 from dataclasses import dataclass, field
-from horseman.datastructures import Cookies
+from rodi import Container, ActivationScope
+from horseman.datastructures import Cookies, Query
 from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
 from horseman.parsers import Data
-from horseman.response import Response
 from horseman.types import Environ, ExceptionInfo
-from rodi import Container, ActivationScope
+from winkel.auth import User
 from winkel.components import Subscribers, Router, MatchedRoute, Params
 from winkel.pipeline import Pipeline
-from winkel.request import Query, Request, User, Environ
+from winkel.request import Request, Environ
+from winkel.response import Response
 from winkel.ui import UI
 
 

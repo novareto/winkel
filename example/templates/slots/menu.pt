@@ -1,5 +1,0 @@
-<ul>
-  <li tal:repeat="item items">
-    <div tal:replace="structure item" />
-  </li>
-</ul>

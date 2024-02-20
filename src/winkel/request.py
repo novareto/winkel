@@ -7,31 +7,11 @@ import horseman.types
 import wrapt
 from functools import cached_property
 from horseman.parsers import Data
-from winkel.datastructures import TypeCastingDict
 from winkel.markers import Marker
 from rodi import ActivationScope, Services, CannotResolveTypeException
 
 
 T = t.TypeVar("T")
-
-
-class Query(TypeCastingDict):
-
-    @classmethod
-    def from_value(cls, value: str):
-        return cls(urllib.parse.parse_qsl(
-            value, keep_blank_values=True, strict_parsing=True))
-
-    @classmethod
-    def from_environ(cls, environ: dict):
-        qs = environ.get('QUERY_STRING', '')
-        if qs:
-            return cls.from_value(qs)
-        return cls()
-
-
-class User(abc.ABC):
-    id: t.Union[str, int]
 
 
 class Environ(dict):
@@ -50,8 +30,8 @@ class Environ(dict):
         return '/'
 
     @cached_property
-    def query(self) -> Query:
-        return Query.from_string(
+    def query(self) -> horseman.datastructures.Query:
+        return horseman.datastructures.Query.from_string(
             self.get('QUERY_STRING', '')
         )
 
@@ -99,7 +79,7 @@ class Environ(dict):
         if '__EXTRACTED__' in self:
             return self['__EXTRACTED__']
         if self.content_type:
-            data = horseman.parsers.parser(
+            data = horseman.parsers.parser.parse(
                 self['wsgi.input'], self.content_type)
         else:
             data = Data()
