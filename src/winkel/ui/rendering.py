@@ -1,9 +1,7 @@
 import wrapt
 import functools
-import typing as t
 from horseman.response import Response
 from chameleon.zpt.template import PageTemplate
-from winkel.request import Request
 from winkel.ui import UI
 
 

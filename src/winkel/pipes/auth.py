@@ -2,7 +2,7 @@ import typing as t
 from pathlib import PurePosixPath
 from horseman.response import Response
 from winkel.request import Request
-from winkel.auth import User, Source, Authenticator
+from winkel.auth import Source, Authenticator
 from winkel.pipeline import Handler, MiddlewareFactory
 
 

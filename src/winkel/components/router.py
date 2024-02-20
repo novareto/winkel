@@ -6,9 +6,8 @@ from prejudice.types import Predicate
 from horseman.types import WSGICallable, HTTPMethod
 from horseman.exceptions import HTTPError
 from winkel.items import Item, ItemMapping
-from winkel.request import Request
 from winkel.components.utils import get_routables
-from rodi import ActivationScope
+from winkel.request import Request
 
 
 class Params(t.Mapping[str, t.Any], dict):
@@ -24,7 +23,7 @@ class Route(Item[str, WSGICallable]):
     def path(self) -> str:
         return self.identifier
 
-    def __call__(self, context: ActivationScope):
+    def __call__(self, context: Request):
         if self.conditions:
             if errors := self.evaluate(context):
                 raise errors
@@ -37,7 +36,7 @@ class MatchedRoute(t.NamedTuple):
     method: HTTPMethod
     params: Params
 
-    def __call__(self, context: ActivationScope):
+    def __call__(self, context: Request):
         return self.route(context)
 
 

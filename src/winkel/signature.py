@@ -22,7 +22,7 @@ class SignatureResolver:
         existing = [s == signature for s in self.signatures]
         if any(existing):
             raise AssertionError(
-                f"This exact signature already exists."
+                f"This exact signature already exists : {signature}."
             )
         else:
             self.signatures.append(signature)

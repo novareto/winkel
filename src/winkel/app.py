@@ -1,13 +1,12 @@
 import typing as t
 from types import MappingProxyType
 from dataclasses import dataclass, field
-from rodi import Container, ActivationScope
+from rodi import Container
 from horseman.datastructures import Cookies, Query
 from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
 from horseman.parsers import Data
 from horseman.types import Environ, ExceptionInfo
-from winkel.auth import User
 from winkel.components import Subscribers, Router, MatchedRoute, Params
 from winkel.pipeline import Pipeline
 from winkel.request import Request, Environ
@@ -25,7 +24,7 @@ class Mounting(Mapping):
 
 
 def get_query(context) -> Query:
-    request = context.get(Environ)
+    environ = context.get(Environ)
     return environ.query
 
 

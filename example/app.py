@@ -6,9 +6,7 @@ from pony import orm
 from typing import Any
 from fanstatic import Fanstatic
 from js.jquery import jquery
-from transaction import TransactionManager
 from horseman.parsers import Data
-from http_session.session import Session
 from prejudice.errors import ConstraintError
 from winkel.auth import Authenticator, User, Source, anonymous
 from winkel.app import Application
@@ -266,12 +264,12 @@ def is_anonymous(action, request, view, context):
 
 
 @actions.register((Request, Any, Any), name='login', title='Login', description='Login action', conditions=(is_anonymous,))
-def login(request, view, item):
+def login_action(request, view, item):
     return '/login'
 
 
 @actions.register((Request, Any, Any), name='logout', title='Logout', description='Logout action', conditions=(is_not_anonymous,))
-def logout(request, view, item):
+def logout_action(request, view, item):
     return '/logout'
 
 

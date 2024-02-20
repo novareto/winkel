@@ -1,14 +1,11 @@
-import abc
 import typing as t
 import urllib.parse
 import horseman.parsers
 import horseman.datastructures
 import horseman.types
-import wrapt
 from functools import cached_property
 from horseman.parsers import Data
-from winkel.markers import Marker
-from rodi import ActivationScope, Services, CannotResolveTypeException
+from rodi import ActivationScope, Services
 
 
 T = t.TypeVar("T")
@@ -108,4 +105,4 @@ class Request(ActivationScope):
         return key in self.scoped_services
 
 
-__all__ = ['Request', 'Query']
+__all__ = ['Environ', 'Request']
