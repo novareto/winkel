@@ -1,13 +1,14 @@
 import typing as t
 from collections import UserDict
-from winkel.items import Item, ItemMapping, ItemCollection
+from elementalist.element import Element
+from elementalist.collections import ElementMapping, ElementCollection
 
 
-class Namespace(ItemMapping[float, Item]):
+class Namespace(ElementMapping[float, Element]):
 
     latest: float = 0.0
 
-    def add(self, item: Item):
+    def add(self, item: Element):
         super().add(item)
         if item.identifier > self.latest:
             self.latest = item.identifier
@@ -56,7 +57,7 @@ class Store(UserDict):
     def __or__(self, other):
         result = self.__class__(**self)
         for k, v in other.items():
-            if k in result and isinstance(v, (t.Mapping, ItemCollection)):
+            if k in result and isinstance(v, (t.Mapping, ElementCollection)):
                 result[k] = result[k] | other[k]
             else:
                 result[k] = other[k]

@@ -1,6 +1,7 @@
 fanstatic
 horseman@git+ssh://github.com/HorsemanWSGI/horseman.git
 deform@git+ssh://github.com/novareto/deform.git
+-e git+ssh://github.com/novareto/elementalist.git#egg=elementalist
 js.jquery
 winkel
 http_session_file

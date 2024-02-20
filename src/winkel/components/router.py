@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from prejudice.types import Predicate
 from horseman.types import WSGICallable, HTTPMethod
 from horseman.exceptions import HTTPError
-from winkel.items import Item, ItemMapping
+from elementalist.element import Element
+from elementalist.collections import ElementMapping
 from winkel.components.utils import get_routables
 from winkel.request import Request
 
@@ -14,20 +15,13 @@ class Params(t.Mapping[str, t.Any], dict):
     pass
 
 
-@dataclass
-class Route(Item[str, WSGICallable]):
+class Route(Element[str, WSGICallable]):
 
     method: HTTPMethod = 'GET'
 
     @property
     def path(self) -> str:
-        return self.identifier
-
-    def __call__(self, context: Request):
-        if self.conditions:
-            if errors := self.evaluate(context):
-                raise errors
-        return self.value(context)
+        return self.key
 
 
 class MatchedRoute(t.NamedTuple):
@@ -37,12 +31,12 @@ class MatchedRoute(t.NamedTuple):
     params: Params
 
     def __call__(self, context: Request):
-        return self.route(context)
+        return self.route.secure_call(context)
 
 
-class RouteStore(ItemMapping[t.Tuple[str, HTTPMethod], Route]):
+class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
 
-    factory: t.Type[Route] = Route
+    ElementType: t.Type[Route] = Route
     _names: t.Mapping[str, str]
 
     def __init__(self, *args, extractor=get_routables, **kwargs):
@@ -60,11 +54,11 @@ class RouteStore(ItemMapping[t.Tuple[str, HTTPMethod], Route]):
         super().__setitem__(key, route)
 
     def add(self, route: Route):
-        self[(route.identifier, route.method)] = route
+        self[(route.key, route.method)] = route
 
-    def spawn(self,
+    def factory(self,
               value: WSGICallable,
-              identifier: str,
+              key: str,
               method: HTTPMethod,
               name: str = '',
               title: str = '',
@@ -80,8 +74,8 @@ class RouteStore(ItemMapping[t.Tuple[str, HTTPMethod], Route]):
         if conditions is None:
             conditions = ()
 
-        return self.factory(
-            identifier=identifier,
+        return self.ElementType(
+            key=key,
             name=name,
             method=method,
             title=title,
@@ -93,13 +87,13 @@ class RouteStore(ItemMapping[t.Tuple[str, HTTPMethod], Route]):
         )
 
     def register(self,
-                 identifier: str,
+                 key: str,
                  methods: t.Optional[t.Iterable[HTTPMethod]] = None,
                  **kwargs):
         def routing(value: WSGICallable):
             for endpoint, verbs in self.extractor(value, methods):
                 for method in verbs:
-                    self.create(endpoint, identifier, method=method, **kwargs)
+                    self.create(endpoint, key, method=method, **kwargs)
             return value
         return routing
 

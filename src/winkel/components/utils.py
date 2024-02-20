@@ -4,7 +4,7 @@ import typing as t
 from pathlib import Path
 from horseman.types import HTTPMethod, WSGICallable
 from winkel.components.view import APIView
-from winkel.items import Item
+from elementalist.element import Element
 
 
 METHODS = frozenset(t.get_args(HTTPMethod))
@@ -63,10 +63,10 @@ def get_schemas(path: Path):
                 if version is not None:
                     version = float(version)
 
-                yield Item(metaschema['schema'], version,
-                           name=namespace,
-                           title=metaschema.get('title', namespace),
-                           metadata={
-                               'ns': f"{namespace}.{version}",
-                               'permissions': permissions
-                           })
+                yield Element(metaschema['schema'], version,
+                              name=namespace,
+                              title=metaschema.get('title', namespace),
+                              metadata={
+                                  'ns': f"{namespace}.{version}",
+                                  'permissions': permissions
+                              })

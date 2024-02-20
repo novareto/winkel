@@ -20,10 +20,18 @@ def query_slot(econtext, name):
     context = econtext.get('context', object())
     try:
         manager = ui.slots.get(request, view, context, name=name)
+        if manager.evaluate(request, view, context):
+            return None
+
         if isclass(manager.value):
-            manager = manager()
-        slots = ui.slots.match_all(request, manager, view, context)
-        return manager(request, view, context, slots.values())
+            manager = manager.value()
+        else:
+            manager = manager.value
+
+        slots = ui.slots.match(request, manager, view, context)
+        return manager(
+            request, view, context, slots.values()
+        )
 
     except LookupError:
         # No slot found. We don't render anything.

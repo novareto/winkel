@@ -17,13 +17,13 @@ dependencies = [
   "frozendict",
   "horseman",
   "orjson",
-  "plum_dispatch",
   "prejudice",
   "rodi",
   "wrapt",
   "itsdangerous",
   "http_session",
   "transaction",
+  "elementalist",
 ]
 
 [tool.setuptools.packages.find]

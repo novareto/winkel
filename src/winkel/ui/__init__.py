@@ -1,21 +1,42 @@
 from dataclasses import dataclass, field
-from typing import Literal, Set
-from plum import Signature
+from typing import Literal, Set, Any
 from fanstatic import Group, Resource
 from chameleon.zpt import template
-from winkel.items import ItemResolver
+from plum import Signature
+from functools import partial
 from winkel.templates import Templates
-from winkel.components.named import Components, NamedComponents
+from winkel.request import Request
+from elementalist.registries import (
+    Registry, NamedElementRegistry, SpecificElementRegistry
+)
+
+
+View = Any
+Context = Any
+Manager = Any
+
+SlotSignatures = {
+    Signature(Request, View, Context, Literal),
+    Signature(Request, Manager, View, Context, Literal)
+}
+
+LayoutSignatures = {
+    Signature(str, Request),
+}
 
 
 @dataclass(kw_only=True, slots=True)
 class UI:
 
-    slots: Components = field(default_factory=Components)
-    layouts: NamedComponents = field(default_factory=NamedComponents)
+    slots: Registry = field(default_factory=NamedElementRegistry)
+    layouts: Registry = field(default_factory=SpecificElementRegistry)
     templates: Templates = field(default_factory=Templates)
     macros: Templates = field(default_factory=Templates)
     resources: Set[Group | Resource] = field(default_factory=set)
+
+    def __post_init__(self):
+        self.slots.restrict |= set(SlotSignatures)
+        self.layouts.restrict |= set(LayoutSignatures)
 
     def inject_resources(self):
         if self.resources:

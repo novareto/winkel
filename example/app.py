@@ -10,7 +10,7 @@ from horseman.parsers import Data
 from prejudice.errors import ConstraintError
 from winkel.auth import Authenticator, User, Source, anonymous
 from winkel.app import Application
-from winkel.components.named import Components
+from elementalist.registries import NamedElementRegistry
 from winkel.ui.rendering import ui_endpoint, template
 from winkel.ui.layout import Layout
 from winkel.ui.slot import SlotExpr
@@ -53,7 +53,7 @@ class DBSource(Source):
         password = credentials.get('password')
         with orm.db_session:
             p = Person.get(email=username)
-            if p.password == password:
+            if p is not None and p.password == password:
                 user = User()
                 user.id = p.id
                 return user
@@ -66,7 +66,7 @@ class DBSource(Source):
             return user
 
 
-class Actions(Components):
+class Actions(NamedElementRegistry):
     ...
 
 
@@ -277,12 +277,12 @@ def logout_action(request, view, item):
 @template('slots/actions')
 def actions(request, view, context, slots):
     registry = request.get(Actions)
-    matching = registry.match_all(request, view, context)
-    evaluated = [
-        (action, action(request, view, context))
-        for name, action in matching.items()
-        if not action.evaluate(request, view, context)
-    ]
+    matching = registry.match(request, view, context)
+    evaluated = []
+    for name, action in matching.items():
+        result = action.conditional_call(request, view, context)
+        if result is not None:
+            evaluated.append((action, result))
     return {
         "actions": evaluated
     }
@@ -296,9 +296,11 @@ class AboveContent:
 
     @template(templates['slots/above'])
     def __call__(self, request, view, context, slots):
-        items = [
-            slot(request, self, view, context) for slot in slots
-        ]
+        items = []
+        for slot in slots:
+            result = slot.conditional_call(request, self, view, context)
+            if result is not None:
+                items.append(result)
         return {'items': items}
 
 
