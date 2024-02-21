@@ -11,6 +11,7 @@ from prejudice.errors import ConstraintError
 from winkel.auth import Authenticator, User, Source, anonymous
 from winkel.app import Application
 from elementalist.registries import NamedElementRegistry
+from winkel.ui import UI
 from winkel.ui.rendering import ui_endpoint, template
 from winkel.ui.layout import Layout
 from winkel.ui.slot import SlotExpr
@@ -19,17 +20,19 @@ from winkel.request import Request
 from winkel.response import Response
 from winkel.components.view import APIView
 from winkel.middlewares import Transactional, HTTPSession, NoAnonymous
-from winkel.services.flash import flash_service, SessionMessages
+from winkel.services.flash import Flash, SessionMessages
 
 
 app = Application()
+
+
 templates = Templates('./templates')
 EXPRESSION_TYPES['slot'] = SlotExpr
 
-
-app.ui.layouts.create(Layout(templates['layout']), (Request,), "")
-app.ui.templates |= templates
-app.ui.resources.add(jquery)
+ui = UI()
+ui.layouts.create(Layout(templates['layout']), (Request,), "")
+ui.templates |= templates
+ui.resources.add(jquery)
 
 
 db = orm.Database()
@@ -66,39 +69,37 @@ class DBSource(Source):
             return user
 
 
-authenticator = Authenticator(
-    sources=[DBSource()], user_key="user"
-)
-
-
 class Actions(NamedElementRegistry):
     ...
 
 
 actions = Actions()
-app.services.register(Authenticator, instance=authenticator)
 app.services.register(Actions, instance=actions)
 app.services.register(orm.Database, instance=db)
-app.services.add_scoped_by_factory(flash_service)
-app.services.add_scoped_by_factory(authenticator.identify)
 
 
-Transactional().install(app, 10)
-
-HTTPSession(
-    store=http_session_file.FileStore(
-        pathlib.Path('./sessions'), 300),
-    secret="secret",
-    salt="salt",
-    cookie_name="cookie_name",
-    secure=False,
-    TTL=300
-).install(app, 20)
-
-NoAnonymous(
-    login_url='/login',
-    allowed_urls={'/register'}
-).install(app, 30)
+app.use(
+    Transactional(),
+    ui,
+    Authenticator(
+        sources=[DBSource()],
+        user_key="user"
+    ),
+    HTTPSession(
+        store=http_session_file.FileStore(
+            pathlib.Path('./sessions'), 300),
+        secret="secret",
+        salt="salt",
+        cookie_name="cookie_name",
+        secure=False,
+        TTL=300
+    ),
+    NoAnonymous(
+        login_url='/login',
+        allowed_urls={'/register'}
+    ),
+    Flash()
+)
 
 
 @app.router.register('/')
@@ -285,7 +286,7 @@ def logout_action(request, view, item):
     return '/logout'
 
 
-@app.ui.slots.register((Request, Any, Any), name='actions')
+@ui.slots.register((Request, Any, Any), name='actions')
 @template('slots/actions')
 def actions(request, view, context, slots):
     registry = request.get(Actions)
@@ -300,7 +301,7 @@ def actions(request, view, context, slots):
     }
 
 
-@app.ui.slots.register((Request, Any, Any), name='above_content')
+@ui.slots.register((Request, Any, Any), name='above_content')
 class AboveContent:
 
     def namespace(self, request):
@@ -316,14 +317,14 @@ class AboveContent:
         return {'items': items}
 
 
-@app.ui.slots.register((Request, AboveContent, Any, Any), name='messages')
+@ui.slots.register((Request, AboveContent, Any, Any), name='messages')
 @template('slots/messages')
 def messages(request, manager, view, context):
     flash = request.get(SessionMessages)
     return {'messages': list(flash)}
 
 
-@app.ui.slots.register((Request, AboveContent, Any, Any), name='identity')
+@ui.slots.register((Request, AboveContent, Any, Any), name='identity')
 def identity(request, manager, view, context):
     who_am_i = request.get(User)
     if who_am_i is anonymous:

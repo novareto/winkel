@@ -77,7 +77,6 @@ class Application(BaseModel, RootNode):
     )
 
     name: str = ''
-    ui: UI = Field(default_factory=UI)
     request_factory: t.Type[Request] = Request
     services: Container = Field(default_factory=Container)
     router: Router = Field(default_factory=Router)
@@ -86,11 +85,14 @@ class Application(BaseModel, RootNode):
 
     def model_post_init(self, __context: t.Any) -> None:
         self.services.register(Application, instance=self)
-        self.services.register(UI, instance=self.ui)
         self.services.add_scoped_by_factory(get_query)
         self.services.add_scoped_by_factory(get_cookies)
         self.services.add_scoped_by_factory(get_params)
         self.services.add_scoped_by_factory(get_form_data)
+
+    def use(self, *components):
+        for component in components:
+            component.install(self.services, self.hooks)
 
     def handle_exception(self, exc_info: ExceptionInfo, environ: Environ):
         pass

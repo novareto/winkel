@@ -11,30 +11,6 @@ from rodi import CannotResolveTypeException
 from functools import wraps, cached_property
 
 
-def http_session_factory(context) -> Session:
-    new = True
-    cookies = context.get(Cookies)
-    manager = context.get(SignedCookieManager)
-    if (sig := cookies.get(manager.cookie_name)):
-        try:
-            sid = str(manager.verify_id(sig), 'utf-8')
-            new = False
-        except itsdangerous.exc.SignatureExpired:
-            # Session expired. We generate a new one.
-            pass
-        except itsdangerous.exc.BadTimeSignature:
-            # Discrepancy in time signature.
-            # Invalid, generate a new one
-            pass
-
-    if new is True:
-        sid = manager.generate_id()
-
-    return manager.session_factory(
-        sid, manager.store, new=new
-    )
-
-
 class HTTPSession(Configuration):
     store: Store
     secret: str
@@ -58,6 +34,33 @@ class HTTPSession(Configuration):
             digest=self.digest,
             TTL=self.TTL,
             cookie_name=self.cookie_name,
+        )
+
+    def install(self, services, hooks):
+        services.register(SignedCookieManager, instance=self.manager)
+        services.add_scoped_by_factory(self.http_session_factory)
+        hooks['response'].add(self.on_response)
+
+    def http_session_factory(self, context) -> Session:
+        new = True
+        cookies = context.get(Cookies)
+        if (sig := cookies.get(self.manager.cookie_name)):
+            try:
+                sid = str(self.manager.verify_id(sig), 'utf-8')
+                new = False
+            except itsdangerous.exc.SignatureExpired:
+                # Session expired. We generate a new one.
+                pass
+            except itsdangerous.exc.BadTimeSignature:
+                # Discrepancy in time signature.
+                # Invalid, generate a new one
+                pass
+
+        if new is True:
+            sid = self.manager.generate_id()
+
+        return self.manager.session_factory(
+            sid, self.manager.store, new=new
         )
 
     def on_response(self, app, request, response):
@@ -90,8 +93,3 @@ class HTTPSession(Configuration):
         )
         response.cookies[self.manager.cookie_name] = cookie
         return response
-
-    def install(self, app, order: int = 99):
-        app.services.register(SignedCookieManager, instance=self.manager)
-        app.services.add_scoped_by_factory(http_session_factory)
-        app.hooks['response'].add(self.on_response)

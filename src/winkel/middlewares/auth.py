@@ -21,8 +21,8 @@ class NoAnonymous(Configuration):
             allowed.add(PurePosixPath(self.login_url))
         return frozenset(allowed)
 
-    def install(self, app, order: int):
-        app.hooks['request'].add(self.on_request)
+    def install(self, services, hooks):
+        hooks['request'].add(self.on_request)
 
     def on_request(self, app, request) -> Response | None:
         # we skip unecessary checks if it's not protected.

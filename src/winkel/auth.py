@@ -1,7 +1,6 @@
 import abc
 import typing as t
 from http_session.session import Session
-from .markers import Marker
 from .request import Request
 
 
@@ -58,6 +57,10 @@ class Authenticator:
         self.sources = sources
         self.user_key = user_key
 
+    def install(self, services, hooks):
+        services.register(Authenticator, instance=self)
+        services.add_scoped_by_factory(self.identify)
+
     def from_credentials(self,
                          request, credentials: dict) -> User | None:
         for source in self.sources:
@@ -66,18 +69,18 @@ class Authenticator:
                 return user
 
     def identify(self, request) -> User:
-        if (session := request.get(Session)) is not Marker.missing:
-            if (userid := session.get(self.user_key, None)) is not None:
-                for source in self.sources:
-                    user = source.fetch(userid, request)
-                    if user is not None:
-                        return user
+        session = request.get(Session)
+        if (userid := session.get(self.user_key, None)) is not None:
+            for source in self.sources:
+                user = source.fetch(userid, request)
+                if user is not None:
+                    return user
         return anonymous
 
     def forget(self, request) -> t.NoReturn:
-        if (session := request.get(Session)) is not Marker.missing:
-            session.clear()
+        session = request.get(Session)
+        session.clear()
 
     def remember(self, request, user: User) -> t.NoReturn:
-        if (session := request.get(Session)) is not Marker.missing:
-            session[self.user_key] = user.id
+        session = request.get(Session)
+        session[self.user_key] = user.id

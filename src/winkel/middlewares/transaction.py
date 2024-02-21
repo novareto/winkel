@@ -5,21 +5,17 @@ from horseman.response import Response
 from functools import wraps
 
 
-TransactionFactory = t.Callable[[], TransactionManager]
-
-
-def transaction_factory(context) -> TransactionManager:
-    manager = TransactionManager(explicit=True)
-    manager.begin()
-    return manager
-
-
 class Transactional(Configuration):
 
-    def install(self, app, order: int):
-        app.services.add_scoped_by_factory(transaction_factory)
-        app.hooks['error'].add(self.on_error)
-        app.hooks['response'].add(self.on_response)
+    def install(self, services, hooks):
+        services.add_scoped_by_factory(self.transaction_factory)
+        hooks['error'].add(self.on_error)
+        hooks['response'].add(self.on_response)
+
+    def transaction_factory(self, context) -> TransactionManager:
+        manager = TransactionManager(explicit=True)
+        manager.begin()
+        return manager
 
     def on_response(self, app, request, response):
         txn = request.get(TransactionManager)

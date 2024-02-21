@@ -43,6 +43,9 @@ class UI:
             for resource in self.resources:
                 resource.need()
 
+    def install(self, services, hooks):
+        services.register(UI, instance=self)
+
     def __or__(self, other: 'UI'):
         if not isinstance(other, self.__class__):
             raise TypeError(
