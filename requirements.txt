@@ -1,0 +1,2 @@
+horseman@git+ssh://github.com/HorsemanWSGI/horseman.git
+-e git+ssh://github.com/novareto/elementalist.git#egg=elementalist
