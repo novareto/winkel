@@ -1,7 +1,7 @@
 import typing as t
 from types import MappingProxyType
-from dataclasses import dataclass, field
 from rodi import Container
+from pydantic import BaseModel, Field, ConfigDict
 from horseman.datastructures import Cookies, Query
 from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
@@ -12,6 +12,10 @@ from winkel.pipeline import Pipeline
 from winkel.request import Request, Environ
 from winkel.response import Response
 from winkel.ui import UI
+from collections import defaultdict
+from functools import partial
+from winkel.datastructures import PriorityChain
+import wrapt
 
 
 Config = t.Mapping[str, t.Any]
@@ -43,23 +47,46 @@ def get_form_data(context) -> Data:
     return environ.extract()
 
 
-@dataclass(kw_only=True)
-class Application(RootNode):
+@wrapt.decorator
+def lifecycle(wrapped, instance, args, kwargs):
+    if instance is None:
+        raise NotImplementedError('Lifecycle needs to wrap an app method.')
+
+    request = args[0]
+    response = instance.trigger('request', *args, **kwargs)
+    if response is not None:
+        return response
+    try:
+        response = wrapped(*args, **kwargs)
+        instance.trigger('response', request, response)
+    except Exception as error:
+        response = instance.trigger('error', request, error)
+        if response is not None:
+            return response
+        raise
+    else:
+        return response
+
+
+class Application(BaseModel, RootNode):
+
+    model_config = ConfigDict(
+        frozen=True,
+        extra='allow',
+        arbitrary_types_allowed=True
+    )
 
     name: str = ''
-    ui: UI = field(default_factory=UI)
+    ui: UI = Field(default_factory=UI)
     request_factory: t.Type[Request] = Request
-    services: Container = field(default_factory=Container)
-    config: Config = field(default_factory=dict)
-    router: Router = field(default_factory=Router)
-    mounts: Mounting = field(default_factory=Mounting)
-    subscribers: Subscribers = field(default_factory=Subscribers)
-    pipeline: Pipeline = field(default_factory=Pipeline)
+    services: Container = Field(default_factory=Container)
+    router: Router = Field(default_factory=Router)
+    mounts: Mounting = Field(default_factory=Mounting)
+    hooks: dict = Field(default_factory=partial(defaultdict, set))
 
-    def __post_init__(self):
+    def model_post_init(self, __context: t.Any) -> None:
         self.services.register(Application, instance=self)
         self.services.register(UI, instance=self.ui)
-        self.services.register(Config, instance=self.config)
         self.services.add_scoped_by_factory(get_query)
         self.services.add_scoped_by_factory(get_cookies)
         self.services.add_scoped_by_factory(get_params)
@@ -68,8 +95,16 @@ class Application(RootNode):
     def handle_exception(self, exc_info: ExceptionInfo, environ: Environ):
         pass
 
-    def endpoint(self, request) -> Response:
-        route = self.router.match(
+    def trigger(self, name: str, *args, **kwargs):
+        if name in self.hooks:
+            for hook in self.hooks[name]:
+                response = hook(self, *args, **kwargs)
+                if response is not None:
+                    return response
+
+    @lifecycle
+    def endpoint(self, request: Request):
+        route: MatchedRoute | None = self.router.match(
             request.environ.path,
             request.environ.method
         )
@@ -86,6 +121,5 @@ class Application(RootNode):
 
         request = self.request_factory(environ, self.services.provider)
         with request:
-            return self.pipeline.wrap(
-                self.endpoint, MappingProxyType(self.config)
-            )(request)
+            response = self.endpoint(request)
+        return response

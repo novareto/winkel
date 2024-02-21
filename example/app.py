@@ -18,8 +18,8 @@ from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.request import Request
 from winkel.response import Response
 from winkel.components.view import APIView
-from winkel.pipes import Transactional, HTTPSession, Authentication
-from winkel.pipes.flash import flash_service, SessionMessages
+from winkel.middlewares import Transactional, HTTPSession, NoAnonymous
+from winkel.services.flash import flash_service, SessionMessages
 
 
 app = Application()
@@ -37,7 +37,7 @@ db = orm.Database()
 class Person(db.Entity):
     id = orm.PrimaryKey(int, auto=True)
     email = orm.Required(str, unique=True)
-    name = orm.Optional(int)
+    name = orm.Optional(str)
     age = orm.Required(int)
     password = orm.Required(str)
 
@@ -66,17 +66,25 @@ class DBSource(Source):
             return user
 
 
+authenticator = Authenticator(
+    sources=[DBSource()], user_key="user"
+)
+
+
 class Actions(NamedElementRegistry):
     ...
 
 
 actions = Actions()
+app.services.register(Authenticator, instance=authenticator)
 app.services.register(Actions, instance=actions)
 app.services.register(orm.Database, instance=db)
 app.services.add_scoped_by_factory(flash_service)
+app.services.add_scoped_by_factory(authenticator.identify)
 
 
 Transactional().install(app, 10)
+
 HTTPSession(
     store=http_session_file.FileStore(
         pathlib.Path('./sessions'), 300),
@@ -86,7 +94,11 @@ HTTPSession(
     secure=False,
     TTL=300
 ).install(app, 20)
-Authentication(sources=[DBSource()]).install(app, 30)
+
+NoAnonymous(
+    login_url='/login',
+    allowed_urls={'/register'}
+).install(app, 30)
 
 
 @app.router.register('/')
@@ -263,60 +275,60 @@ def is_anonymous(action, request, view, context):
         raise ConstraintError('User is not anonymous.')
 
 
-@actions.register((Request, Any, Any), name='login', title='Login', description='Login action', conditions=(is_anonymous,))
-def login_action(request, view, item):
-    return '/login'
+# @actions.register((Request, Any, Any), name='login', title='Login', description='Login action', conditions=(is_anonymous,))
+# def login_action(request, view, item):
+#     return '/login'
 
 
-@actions.register((Request, Any, Any), name='logout', title='Logout', description='Logout action', conditions=(is_not_anonymous,))
-def logout_action(request, view, item):
-    return '/logout'
+# @actions.register((Request, Any, Any), name='logout', title='Logout', description='Logout action', conditions=(is_not_anonymous,))
+# def logout_action(request, view, item):
+#     return '/logout'
 
 
-@app.ui.slots.register((Request, Any, Any), name='actions')
-@template('slots/actions')
-def actions(request, view, context, slots):
-    registry = request.get(Actions)
-    matching = registry.match(request, view, context)
-    evaluated = []
-    for name, action in matching.items():
-        result = action.conditional_call(request, view, context)
-        if result is not None:
-            evaluated.append((action, result))
-    return {
-        "actions": evaluated
-    }
+# @app.ui.slots.register((Request, Any, Any), name='actions')
+# @template('slots/actions')
+# def actions(request, view, context, slots):
+#     registry = request.get(Actions)
+#     matching = registry.match(request, view, context)
+#     evaluated = []
+#     for name, action in matching.items():
+#         result = action.conditional_call(request, view, context)
+#         if result is not None:
+#             evaluated.append((action, result))
+#     return {
+#         "actions": evaluated
+#     }
 
 
-@app.ui.slots.register((Request, Any, Any), name='above_content')
-class AboveContent:
+# @app.ui.slots.register((Request, Any, Any), name='above_content')
+# class AboveContent:
 
-    def namespace(self, request):
-        return {'manager': self}
+#     def namespace(self, request):
+#         return {'manager': self}
 
-    @template(templates['slots/above'])
-    def __call__(self, request, view, context, slots):
-        items = []
-        for slot in slots:
-            result = slot.conditional_call(request, self, view, context)
-            if result is not None:
-                items.append(result)
-        return {'items': items}
-
-
-@app.ui.slots.register((Request, AboveContent, Any, Any), name='messages')
-@template('slots/messages')
-def messages(request, manager, view, context):
-    flash = request.get(SessionMessages)
-    return {'messages': list(flash)}
+#     @template(templates['slots/above'])
+#     def __call__(self, request, view, context, slots):
+#         items = []
+#         for slot in slots:
+#             result = slot.conditional_call(request, self, view, context)
+#             if result is not None:
+#                 items.append(result)
+#         return {'items': items}
 
 
-@app.ui.slots.register((Request, AboveContent, Any, Any), name='identity')
-def identity(request, manager, view, context):
-    who_am_i = request.get(User)
-    if who_am_i is anonymous:
-        return "<div class='container alert alert-secondary'>Not logged in. Please consider creating an account or logging in.</div>"
-    return f"<div class='container alert alert-info'>You are logged in as {who_am_i.id}</div>"
+# @app.ui.slots.register((Request, AboveContent, Any, Any), name='messages')
+# @template('slots/messages')
+# def messages(request, manager, view, context):
+#     flash = request.get(SessionMessages)
+#     return {'messages': list(flash)}
+
+
+# @app.ui.slots.register((Request, AboveContent, Any, Any), name='identity')
+# def identity(request, manager, view, context):
+#     who_am_i = request.get(User)
+#     if who_am_i is anonymous:
+#         return "<div class='container alert alert-secondary'>Not logged in. Please consider creating an account or logging in.</div>"
+#     return f"<div class='container alert alert-info'>You are logged in as {who_am_i.id}</div>"
 
 
 if __name__ == "__main__":

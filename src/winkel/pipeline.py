@@ -1,83 +1,39 @@
 import abc
-import bisect
 import typing as t
+from pydantic import BaseModel, ConfigDict
 from functools import reduce
+from winkel.datastructures import PriorityChain
+from winkel.request import Request
+from winkel.response import Response
 
 
-C = t.TypeVar('C')
+class Configuration(BaseModel):
+    model_config = ConfigDict(
+        frozen=True,
+        extra='allow',
+        arbitrary_types_allowed=True
+    )
 
 
-class PriorityChain(t.Generic[C]):
-
-    __slots__ = ('_chain',)
-
-    _chain: t.List[t.Tuple[int, C]]
-
-    def __init__(self, *components: C):
-        self._chain = list(enumerate(components))
-
-    def __iter__(self):
-        return iter(self._chain)
-
-    def add(self, component: C, order: int = 0):
-        insert = (order, component)
-        if not self._chain:
-            self._chain = [insert]
-        elif insert in self._chain:
-            raise KeyError(
-                'Component {component!r} already exists at #{order}.')
-        else:
-            bisect.insort(self._chain, insert)
-
-    def remove(self, component: C, order: int):
-        insert = (order, component)
-        if insert not in self._chain:
-            raise KeyError(
-                'Component {component!r} doest not exist at #{order}.')
-        self._chain.remove(insert)
-
-    def clear(self):
-        self._chain.clear()
+Handler = t.Callable[[Request], Response]
+HandlerWrapper = t.Callable[[Handler], Handler]
 
 
-Handler = t.Callable
-Middleware = t.Callable[[Handler, t.Optional[t.Mapping]], Handler]
+class Pipeline(PriorityChain[HandlerWrapper]):
 
-
-class Pipeline(PriorityChain[Middleware]):
-
-    def wrap(self, wrapped: Handler, conf: t.Optional[t.Mapping] = None):
+    def wrap(self, wrapped: Handler) -> Handler:
         if not self._chain:
             return wrapped
 
         return reduce(
-            lambda x, y: y(x, conf),
+            lambda x, y: y(x),
             (m[1] for m in reversed(self._chain)),
             wrapped
         )
 
-    def __call__(self, conf: t.Optional[t.Mapping] = None):
-        def wrapper(wrapped: Handler):
-            return self.wrap(wrapped, conf)
-        return wrapper
 
-
-class MiddlewareFactory(abc.ABC, Middleware):
-
-    Configuration: t.ClassVar[t.Type] = None
-
-    def __init__(self, **kwargs):
-        if self.Configuration is not None:
-            self.config = self.Configuration(**kwargs)
-        else:
-            self.config = kwargs
-        self.__post_init__()
-
-    def __post_init__(self):
-        pass
+class Middleware(abc.ABC, Configuration, HandlerWrapper):
 
     @abc.abstractmethod
-    def __call__(self,
-                 handler: Handler,
-                 appconf: t.Optional[t.Mapping] = None) -> Handler:
+    def __call__(self, handler: Handler) -> Handler:
         pass

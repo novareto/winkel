@@ -1,27 +1,28 @@
 import typing as t
 from transaction import TransactionManager
-from winkel.pipeline import Handler, MiddlewareFactory
+from winkel.pipeline import Handler, Middleware
 from horseman.response import Response
+from functools import wraps
 
 
-class Transactional(MiddlewareFactory):
+TransactionFactory = t.Callable[[], TransactionManager]
 
-    class Configuration(t.NamedTuple):
-        factory: t.Callable[[], TransactionManager] = (
-            lambda: TransactionManager(explicit=True)
-        )
 
-    def factory(self, context) -> TransactionManager:
-        manager = self.config.factory()
-        manager.begin()
-        return manager
+def transaction_factory(context) -> TransactionManager:
+    manager = TransactionManager(explicit=True)
+    manager.begin()
+    return manager
+
+
+class Transactional(Middleware):
 
     def install(self, app, order: int):
-        app.services.add_scoped_by_factory(self.factory)
+        app.services.add_scoped_by_factory(transaction_factory)
         app.pipeline.add(self, order)
 
-    def __call__(self, handler: Handler, globalconf: t.Mapping | None = None):
+    def __call__(self, handler: Handler) -> Handler:
 
+        @wraps(handler)
         def transaction_middleware(request):
             try:
                 response = handler(request)
