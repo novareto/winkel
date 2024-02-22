@@ -10,7 +10,7 @@ from horseman.parsers import Data
 from prejudice.errors import ConstraintError
 from winkel.auth import Authenticator, User, Source, anonymous
 from winkel.app import Application
-from elementalist.registries import NamedElementRegistry
+from elementalist.registries import SignatureMapping
 from winkel.ui import UI
 from winkel.ui.rendering import ui_endpoint, template
 from winkel.ui.layout import Layout
@@ -69,7 +69,7 @@ class DBSource(Source):
             return user
 
 
-class Actions(NamedElementRegistry):
+class Actions(SignatureMapping):
     ...
 
 
@@ -290,7 +290,7 @@ def logout_action(request, view, item):
 @template('slots/actions')
 def actions(request, view, context, slots):
     registry = request.get(Actions)
-    matching = registry.match(request, view, context)
+    matching = registry.match_grouped(request, view, context)
     evaluated = []
     for name, action in matching.items():
         result = action.conditional_call(request, view, context)

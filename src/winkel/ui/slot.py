@@ -19,7 +19,7 @@ def query_slot(econtext, name):
     view = econtext.get('view', object())
     context = econtext.get('context', object())
     try:
-        manager = ui.slots.get(request, view, context, name=name)
+        manager = ui.slots.lookup(request, view, context, name=name)
         if manager.evaluate(request, view, context):
             return None
 
@@ -28,7 +28,7 @@ def query_slot(econtext, name):
         else:
             manager = manager.value
 
-        slots = ui.slots.match(request, manager, view, context)
+        slots = ui.slots.match_grouped(request, manager, view, context)
         return manager(
             request, view, context, slots.values()
         )

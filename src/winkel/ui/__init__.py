@@ -6,37 +6,17 @@ from plum import Signature
 from functools import partial
 from winkel.templates import Templates
 from winkel.request import Request
-from elementalist.registries import (
-    Registry, NamedElementRegistry, SpecificElementRegistry
-)
-
-
-View = Any
-Context = Any
-Manager = Any
-
-SlotSignatures = {
-    Signature(Request, View, Context, Literal),
-    Signature(Request, Manager, View, Context, Literal)
-}
-
-LayoutSignatures = {
-    Signature(str, Request),
-}
+from elementalist.registries import SignatureMapping
 
 
 @dataclass(kw_only=True, slots=True)
 class UI:
 
-    slots: Registry = field(default_factory=NamedElementRegistry)
-    layouts: Registry = field(default_factory=SpecificElementRegistry)
+    slots: SignatureMapping = field(default_factory=SignatureMapping)
+    layouts: SignatureMapping = field(default_factory=SignatureMapping)
     templates: Templates = field(default_factory=Templates)
     macros: Templates = field(default_factory=Templates)
     resources: Set[Group | Resource] = field(default_factory=set)
-
-    def __post_init__(self):
-        self.slots.restrict |= set(SlotSignatures)
-        self.layouts.restrict |= set(LayoutSignatures)
 
     def inject_resources(self):
         if self.resources:
