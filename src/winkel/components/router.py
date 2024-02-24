@@ -1,7 +1,6 @@
 import autoroutes
 import typing as t
 from http import HTTPStatus
-from dataclasses import dataclass
 from prejudice.types import Predicate
 from horseman.types import WSGICallable, HTTPMethod
 from horseman.exceptions import HTTPError
@@ -57,16 +56,15 @@ class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
         self[(route.key, route.method)] = route
 
     def factory(self,
-              value: WSGICallable,
-              key: str,
-              method: HTTPMethod,
-              name: str = '',
-              title: str = '',
-              description: str = '',
-              conditions: t.Optional[t.Iterable[Predicate]] = None,
-              classifiers: t.Optional[t.Iterable[str]] = None,
-              **metadata: t.Any
-              ):
+                value: WSGICallable,
+                key: str,
+                method: HTTPMethod,
+                name: str = '',
+                title: str = '',
+                description: str = '',
+                conditions: t.Optional[t.Iterable[Predicate]] = None,
+                classifiers: t.Optional[t.Iterable[str]] = None,
+                **metadata: t.Any) -> Route:
 
         if classifiers is None:
             classifiers = ()

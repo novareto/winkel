@@ -1,9 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Literal, Set, Any
+from typing import Set
 from fanstatic import Group, Resource
-from chameleon.zpt import template
-from plum import Signature
-from functools import partial
 from winkel.templates import Templates
 from winkel.request import Request
 from elementalist.registries import SignatureMapping

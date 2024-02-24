@@ -1,21 +1,17 @@
 import typing as t
-from types import MappingProxyType
+import wrapt
 from rodi import Container
-from pydantic import BaseModel, Field, ConfigDict
+from dataclasses import dataclass, field
 from horseman.datastructures import Cookies, Query
 from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
 from horseman.parsers import Data
 from horseman.types import Environ, ExceptionInfo
-from winkel.components import Subscribers, Router, MatchedRoute, Params
-from winkel.pipeline import Pipeline
+from winkel.components import Router, MatchedRoute, Params
 from winkel.request import Request, Environ
 from winkel.response import Response
-from winkel.ui import UI
 from collections import defaultdict
 from functools import partial
-from winkel.datastructures import PriorityChain
-import wrapt
 
 
 Config = t.Mapping[str, t.Any]
@@ -68,22 +64,17 @@ def lifecycle(wrapped, instance, args, kwargs):
         return response
 
 
-class Application(BaseModel, RootNode):
-
-    model_config = ConfigDict(
-        frozen=True,
-        extra='allow',
-        arbitrary_types_allowed=True
-    )
+@dataclass(kw_only=True, slots=True)
+class Application(RootNode):
 
     name: str = ''
     request_factory: t.Type[Request] = Request
-    services: Container = Field(default_factory=Container)
-    router: Router = Field(default_factory=Router)
-    mounts: Mounting = Field(default_factory=Mounting)
-    hooks: dict = Field(default_factory=partial(defaultdict, set))
+    services: Container = field(default_factory=Container)
+    router: Router = field(default_factory=Router)
+    mounts: Mounting = field(default_factory=Mounting)
+    hooks: dict = field(default_factory=partial(defaultdict, set))
 
-    def model_post_init(self, __context: t.Any) -> None:
+    def __post_init__(self) -> None:
         self.services.register(Application, instance=self)
         self.services.add_scoped_by_factory(get_query)
         self.services.add_scoped_by_factory(get_cookies)

@@ -6,9 +6,9 @@ from horseman.datastructures import Cookies
 from http_session.meta import Store
 from http_session.session import Session
 from http_session.cookie import SameSite, HashAlgorithm, SignedCookieManager
-from winkel.pipeline import Handler, Configuration
+from winkel.pipeline import Configuration
 from rodi import CannotResolveTypeException
-from functools import wraps, cached_property
+from functools import cached_property
 
 
 class HTTPSession(Configuration):

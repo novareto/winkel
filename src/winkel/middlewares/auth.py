@@ -1,11 +1,10 @@
 import typing as t
-from functools import wraps, cached_property
+from functools import cached_property
 from horseman.exceptions import HTTPError
 from pathlib import PurePosixPath
 from pydantic import computed_field
-from winkel.auth import Source, Authenticator, anonymous, User
-from winkel.pipeline import Handler, Configuration
-from winkel.request import Request
+from winkel.auth import anonymous, User
+from winkel.pipeline import Configuration
 from winkel.response import Response
 
 

@@ -1,8 +1,6 @@
 import typing as t
 from transaction import TransactionManager
-from winkel.pipeline import Handler, Configuration
-from horseman.response import Response
-from functools import wraps
+from winkel.pipeline import Configuration
 
 
 class Transactional(Configuration):

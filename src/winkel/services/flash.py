@@ -1,5 +1,4 @@
 import typing as t
-from http_session.session import Session
 from winkel.request import Request
 from winkel.pipeline import Configuration
 from winkel.middlewares.session import Session
@@ -44,6 +43,6 @@ class Flash(Configuration):
 
     def install(self, services, hooks):
         for depend in self.depends:
-            if not depend in services.provider:
+            if depend not in services.provider:
                 raise LookupError(f'Missing dependency service: {depend}')
         services.add_scoped_by_factory(self.messages_factory)
