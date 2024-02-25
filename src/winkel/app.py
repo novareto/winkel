@@ -49,7 +49,7 @@ def lifecycle(wrapped, instance, args, kwargs):
         raise NotImplementedError('Lifecycle needs to wrap an app method.')
 
     request = args[0]
-    response = instance.trigger('request', *args, **kwargs)
+    response = instance.trigger('request', request)
     if response is not None:
         return response
     try:

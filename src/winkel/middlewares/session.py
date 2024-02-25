@@ -37,7 +37,6 @@ class HTTPSession(Configuration):
         )
 
     def install(self, services, hooks):
-        services.register(SignedCookieManager, instance=self.manager)
         services.add_scoped_by_factory(self.http_session_factory)
         hooks['response'].add(self.on_response)
 

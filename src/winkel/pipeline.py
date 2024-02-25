@@ -1,18 +1,10 @@
 import abc
 import typing as t
-from pydantic import BaseModel, ConfigDict
 from functools import reduce
 from winkel.datastructures import PriorityChain
 from winkel.request import Request
 from winkel.response import Response
-
-
-class Configuration(BaseModel):
-    model_config = ConfigDict(
-        frozen=True,
-        extra='allow',
-        arbitrary_types_allowed=True
-    )
+from winkel.service import Configuration
 
 
 Handler = t.Callable[[Request], Response]

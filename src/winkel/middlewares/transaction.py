@@ -16,13 +16,15 @@ class Transactional(Configuration):
         return manager
 
     def on_response(self, app, request, response):
-        txn = request.get(TransactionManager)
-        if txn.isDoomed() or response.status >= 400:
-            txn.abort()
-        else:
-            txn.commit()
+        if TransactionManager in request:
+            txn = request.get(TransactionManager)
+            if txn.isDoomed() or response.status >= 400:
+                txn.abort()
+            else:
+                txn.commit()
         return response
 
     def on_error(self, app, request, error):
-        txn = request.get(TransactionManager)
-        txn.abort()
+        if TransactionManager in request:
+            txn = request.get(TransactionManager)
+            txn.abort()

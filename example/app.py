@@ -1,6 +1,5 @@
 import http_session_file
 import pathlib
-from pony import orm
 from fanstatic import Fanstatic
 from js.jquery import jquery
 from winkel.auth import Authenticator
@@ -29,11 +28,6 @@ ui = UI(
 ui.layouts.create(Layout(templates['layout']), (Request,), "")
 ui.resources.add(jquery)
 
-
-models.db.bind(provider='sqlite', filename='test.sqlite', create_db=True)
-models.db.generate_mapping(create_tables=True)
-app.services.register(orm.Database, instance=models.db)
-
 app.services.register(actions.Actions, instance=actions.actions)
 
 routes = register.routes | login.routes | views.routes
@@ -44,6 +38,7 @@ app.router |= routes
 
 app.use(
     Transactional(),
+    db.SQLDatabase(url="sqlite:///database.db"),
     ui,
     Authenticator(
         sources=[db.DBSource()],
