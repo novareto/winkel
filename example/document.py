@@ -12,27 +12,29 @@ from winkel.services.flash import SessionMessages
 from winkel.ui.rendering import ui_endpoint, template
 from winkel.components import Params
 from winkel.app import Application
-from models import Document
+from models import Folder, Document
 
 
 routes = RouteStore()
 
 
 document_schema = jsonschema_colander.types.Object.from_json(
-    Folder.model_json_schema(), config={
+    Document.model_json_schema(), config={
         "": {
             "exclude": ("id", "author_id", "folder_id")
         },
+
     }
 )
 
 def document_creation_form(request):
     schema = document_schema().bind(request=request)
+    schema['text'].widget = deform.widget.TextAreaWidget()
     process_btn = deform.form.Button(name='process', title="Process")
     return deform.form.Form(schema, buttons=(process_btn,))
 
 
-@routes.register('/folders/{folder_id}/new', name="document_view")
+@routes.register('/folders/{folder_id}/new', name="document_create")
 class CreateDocument(APIView):
 
     def namespace(self, request):

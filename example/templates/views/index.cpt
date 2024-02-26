@@ -1,5 +1,11 @@
 <article>
-  <h2>This is a view</h2>
+  <h2>User overview</h2>
+  <div>
+    <a href="${url_for('folder_create')}">
+      <i class="bi-folder-plus"></i>
+      Add new folder
+    </a>
+  </div>
   <section tal:condition="not user.folders">
     Your user doesn't have any folders yet
   </section>
