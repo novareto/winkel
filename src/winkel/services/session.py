@@ -1,17 +1,16 @@
 import itsdangerous
-import typing as t
 from pydantic import computed_field
 from transaction import TransactionManager
 from horseman.datastructures import Cookies
 from http_session.meta import Store
 from http_session.session import Session
 from http_session.cookie import SameSite, HashAlgorithm, SignedCookieManager
-from winkel.pipeline import Configuration
 from rodi import CannotResolveTypeException
 from functools import cached_property
+from winkel.service import Service, handlers, factories
 
 
-class HTTPSession(Configuration):
+class HTTPSession(Service):
     store: Store
     secret: str
     samesite: SameSite = SameSite.lax
@@ -36,10 +35,7 @@ class HTTPSession(Configuration):
             cookie_name=self.cookie_name,
         )
 
-    def install(self, services, hooks):
-        services.add_scoped_by_factory(self.http_session_factory)
-        hooks['response'].add(self.on_response)
-
+    @factories.scoped
     def http_session_factory(self, context) -> Session:
         new = True
         cookies = context.get(Cookies)
@@ -62,6 +58,7 @@ class HTTPSession(Configuration):
             sid, self.manager.store, new=new
         )
 
+    @handlers.on_response
     def on_response(self, app, request, response):
         session = request.get(Session)
         if not session.modified and (

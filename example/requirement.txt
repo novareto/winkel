@@ -1,8 +1,0 @@
-fanstatic
-deform@git+ssh://github.com/novareto/deform.git
-js.jquery
-winkel
-http_session_file
-colander
-pony
-bjoern

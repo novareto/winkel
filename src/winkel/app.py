@@ -86,7 +86,8 @@ class Application(RootNode):
             component.install(self.services, self.hooks)
 
     def handle_exception(self, exc_info: ExceptionInfo, environ: Environ):
-        pass
+        typ, err, tb = exc_info
+        return Response(500, str(err))
 
     def trigger(self, name: str, *args, **kwargs):
         if name in self.hooks:
@@ -112,7 +113,12 @@ class Application(RootNode):
             if (mounted := self.mounts.resolve(path, environ)) is not None:
                 return mounted.resolve(path, environ)
 
-        request = self.request_factory(environ, self.services.provider)
+        request = Request(environ, provider=self.services.provider)
         with request:
-            response = self.endpoint(request)
-        return response
+            with request.stack:
+                try:
+                    response = self.endpoint(request)
+                except HTTPError as err:
+                    response = Response(err.status, err.body)
+                return response
+

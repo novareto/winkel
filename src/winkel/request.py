@@ -11,47 +11,52 @@ from rodi import ActivationScope, Services
 T = t.TypeVar("T")
 
 
-class Environ(dict):
+class Environ:
+    
+    _environ: horseman.types.Environ
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.method = self.get('REQUEST_METHOD', 'GET').upper()
+    def get(self, name, default=None):
+        return self._environ.get(name, default=default) 
+    
+    def __init__(self, environ: horseman.types.Environ):
+        self._environ = environ
+        self.method = self._environ.get('REQUEST_METHOD', 'GET').upper()
         self.script_name = urllib.parse.quote(
-            self.get('SCRIPT_NAME', '')
+            self._environ.get('SCRIPT_NAME', '')
         )
 
     @cached_property
     def path(self) -> str:
-        if path := self.get('PATH_INFO'):
+        if path := self._environ.get('PATH_INFO'):
             return path.encode('latin-1').decode('utf-8')
         return '/'
 
     @cached_property
     def query(self) -> horseman.datastructures.Query:
         return horseman.datastructures.Query.from_string(
-            self.get('QUERY_STRING', '')
+            self._environ.get('QUERY_STRING', '')
         )
 
     @cached_property
     def cookies(self) -> horseman.datastructures.Cookies:
         return horseman.datastructures.Cookies.from_string(
-            self.get('HTTP_COOKIE', '')
+            self._environ.get('HTTP_COOKIE', '')
         )
 
     @cached_property
     def content_type(self) -> horseman.datastructures.ContentType | None:
         if 'CONTENT_TYPE' in self:
             return horseman.datastructures.ContentType(
-                self.get('CONTENT_TYPE', '')
+                self._environ.get('CONTENT_TYPE', '')
             )
 
     @cached_property
     def application_uri(self):
-        scheme = self.get('wsgi.url_scheme', 'http')
-        http_host = self.get('HTTP_HOST')
+        scheme = self._environ.get('wsgi.url_scheme', 'http')
+        http_host = self._environ.get('HTTP_HOST')
         if not http_host:
-            server = self['SERVER_NAME']
-            port = self.get('SERVER_PORT', '80')
+            server = self._environ['SERVER_NAME']
+            port = self._environ.get('SERVER_PORT', '80')
         elif ':' in http_host:
             server, port = http_host.split(':', 1)
         else:
@@ -65,44 +70,44 @@ class Environ(dict):
 
     def uri(self, include_query=True):
         url = self.application_uri
-        path_info = urllib.parse.quote(self.get('PATH_INFO', ''))
+        path_info = urllib.parse.quote(self._environ.get('PATH_INFO', ''))
         if include_query:
-            qs = urllib.parse.quote(self.get('QUERY_STRING', ''))
+            qs = urllib.parse.quote(self._environ.get('QUERY_STRING', ''))
             if qs:
                 return f"{url}{path_info}?{qs}"
         return f"{url}{path_info}"
 
     def extract(self) -> horseman.parsers.Data:
-        if '__EXTRACTED__' in self:
-            return self['__EXTRACTED__']
         if self.content_type:
             data = horseman.parsers.parser.parse(
-                self['wsgi.input'], self.content_type)
+                self._environ['wsgi.input'], self.content_type)
         else:
             data = Data()
-        self['__EXTRACTED__'] = data
         return data
 
+from contextlib import ExitStack
 
 class Request(ActivationScope):
 
     def __init__(self,
-                 environ: horseman.types.Environ,
+                 environ,
+                 stack: ExitStack | None = None,
                  provider: Services | None = None,
                  scoped_services: t.Dict[t.Type[T] | str, T] | None = None):
         self.environ = Environ(environ)
         self.provider = provider or Services()
         if scoped_services is None:
             scoped_services = {}
+        scoped_services[Environ] = self.environ
         self.scoped_services = scoped_services
-        self.register(Request, self)
-        self.register(Environ, self.environ)
+        self.stack = stack or ExitStack()
 
     def register(self, key: t.Type[T] | str, value: T):
         self.scoped_services[key] = value
 
     def __contains__(self, key):
-        return key in self.scoped_services
+        return key in self.scoped_services or key in self.provider
+
 
 
 __all__ = ['Environ', 'Request']

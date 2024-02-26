@@ -4,11 +4,11 @@ from horseman.exceptions import HTTPError
 from pathlib import PurePosixPath
 from pydantic import computed_field
 from winkel.auth import anonymous, User
-from winkel.pipeline import Configuration
+from winkel.service import Service, handlers
 from winkel.response import Response
 
 
-class NoAnonymous(Configuration):
+class NoAnonymous(Service):
     allowed_urls: t.Set[str] = set()
     login_url: str | None = None
 
@@ -20,11 +20,9 @@ class NoAnonymous(Configuration):
             allowed.add(PurePosixPath(self.login_url))
         return frozenset(allowed)
 
-    def install(self, services, hooks):
-        hooks['request'].add(self.on_request)
-
-    def on_request(self, app, request) -> Response | None:
-        # we skip unecessary checks if it's not protected.
+    @handlers.on_request
+    def check_access(self, app, request) -> Response | None:
+        # we skip unnecessary checks if it's not protected.
         path = PurePosixPath(request.environ.path)
         for bypass in self.unprotected:
             if path.is_relative_to(bypass):

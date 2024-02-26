@@ -4,13 +4,13 @@ from fanstatic import Fanstatic
 from js.jquery import jquery
 from winkel.auth import Authenticator
 from winkel.app import Application
+from winkel.response import Response
 from winkel.ui import UI
 from winkel.ui.layout import Layout
 from winkel.ui.slot import SlotExpr
 from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.request import Request
-from winkel.middlewares import Transactional, HTTPSession, NoAnonymous
-from winkel.services.flash import Flash
+from winkel.services import Transactional, HTTPSession, NoAnonymous, Flash
 import register, login, views, actions, db, ui, models
 
 
@@ -36,6 +36,40 @@ routes = register.routes | login.routes | views.routes
 app.router |= routes
 
 
+class Whatever:
+    pass
+
+
+from contextlib import contextmanager
+
+@contextmanager
+def mywhatever():
+    whatever = Whatever()
+    try:
+        yield whatever
+    except:
+        print('oops')
+    finally:
+        print('closing my whatever')
+
+def whatever_factory(scope) -> Whatever:
+    whatever = scope.stack.enter_context(mywhatever())
+    return whatever
+
+app.services.add_scoped_by_factory(whatever_factory)
+
+@app.router.register('/test/ok')
+def test(request):
+    print(request.get(Whatever))
+    return Response(200, body=b'whatever')
+
+
+@app.router.register('/test/ko')
+def test2(request):
+    print(request.get(Whatever))
+    raise NotImplementedError("Damn")
+
+
 app.use(
     Transactional(),
     db.SQLDatabase(url="sqlite:///database.db"),
@@ -55,14 +89,9 @@ app.use(
     ),
     NoAnonymous(
         login_url='/login',
-        allowed_urls={'/register'}
+        allowed_urls={'/register', '/test'}
     ),
     Flash()
 )
 
-
-if __name__ == "__main__":
-    import bjoern
-
-    wsgi_app = Fanstatic(app)
-    bjoern.run(wsgi_app, "127.0.0.1", 8000)
+wsgi_app = Fanstatic(app)

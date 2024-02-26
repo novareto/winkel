@@ -1,7 +1,7 @@
 import typing as t
 from winkel.request import Request
-from winkel.pipeline import Configuration
-from winkel.middlewares.session import Session
+from winkel.service import Service, factories
+from http_session import Session
 
 
 class Message(t.NamedTuple):
@@ -33,16 +33,12 @@ class SessionMessages:
         self.session.save()
 
 
-class Flash(Configuration):
+class Flash(Service):
     key: str = "flashmessages"
-    depends: t.ClassVar[t.Iterable[t.Type]] = [Session]
+    __dependencies__ = [Session]
 
+    @factories.scoped
     def messages_factory(self, request: Request) -> SessionMessages:
         session = request.get(Session)
         return SessionMessages(session, key=self.key)
 
-    def install(self, services, hooks):
-        for depend in self.depends:
-            if depend not in services.provider:
-                raise LookupError(f'Missing dependency service: {depend}')
-        services.add_scoped_by_factory(self.messages_factory)

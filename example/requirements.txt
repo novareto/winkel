@@ -1,0 +1,9 @@
+fanstatic
+deform@git+https://github.com/novareto/deform.git
+js.jquery
+winkel
+http_session_file
+colander
+pony
+waitress
+sqlmodel

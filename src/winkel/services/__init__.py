@@ -1,11 +1,13 @@
 from .transaction import Transactional
-from .session import HTTPSession, Session
+from .session import Session, HTTPSession
 from .auth import NoAnonymous
+from .flash import Flash
 
 
 __all__ = [
     'Transactional',
     'HTTPSession',
     'Session',
-    'NoAnonymous'
+    'NoAnonymous',
+    'Flash'
 ]
