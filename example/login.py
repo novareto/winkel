@@ -21,7 +21,8 @@ class LoginSchema(colander.Schema):
 
     password = colander.SchemaNode(
         colander.String(),
-        title="password"
+        title="password",
+        widget=deform.widget.PasswordWidget()
     )
 
 

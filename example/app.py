@@ -9,7 +9,7 @@ from winkel.ui import UI
 from winkel.ui.slot import SlotExpr
 from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.services import Transactional, HTTPSession, NoAnonymous, Flash
-import register, login, views, actions, db, ui, models
+import register, login, views, actions, db, ui, models, folder
 
 
 app = Application()
@@ -27,7 +27,7 @@ ui = UI(
 
 
 app.services.register(actions.Actions, instance=actions.actions)
-app.router |= register.routes | login.routes | views.routes
+app.router |= register.routes | login.routes | views.routes | folder.routes
 
 
 class Whatever:

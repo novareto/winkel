@@ -1,0 +1,15 @@
+<article>
+  <h2>${folder.name}</h2>
+  <section tal:condition="not folder.documents">
+    This folder doesn't have any documents yet.
+  </section>
+  <section tal:condition="folder.documents">
+    <h3>Documents</h3>
+    <div class="list-group">
+      <a class="button list-group-item d-flex justify-content-between align-items-start" tal:repeat="doc folder.documents"
+         href="${url_for('document_view', document_id=document.id)}">
+        ${document.title}
+      </a>
+    </div>
+  </section>
+</article>

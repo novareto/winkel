@@ -1,5 +1,6 @@
 import autoroutes
 import typing as t
+from frozendict import frozendict
 from http import HTTPStatus
 from prejudice.types import Predicate
 from horseman.types import WSGICallable, HTTPMethod
@@ -10,7 +11,7 @@ from winkel.components.utils import get_routables
 from winkel.request import Request
 
 
-class Params(t.Mapping[str, t.Any], dict):
+class Params(frozendict):
     pass
 
 
@@ -54,6 +55,22 @@ class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
 
     def add(self, route: Route):
         self[(route.key, route.method)] = route
+
+    def has_route(self, name: str):
+        return name in self._names
+
+    def url_for(self, name: str, **params):
+        path = self._names.get(name)
+        if path is None:
+            raise LookupError(f'Unknown route `{name}`.')
+        try:
+            # Raises a KeyError too if some param misses
+            # FIXME : this doesn't handle typed params
+            #         such as {param_name:string}
+            return path.format(**params)
+        except KeyError:
+            raise ValueError(
+                f"No route found with name {name} and params {params}.")
 
     def factory(self,
                 value: WSGICallable,

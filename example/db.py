@@ -20,16 +20,12 @@ class DBSource(Source):
             select(Person).where(Person.email == username)
         ).scalar_one_or_none()
         if p is not None and p.password == password:
-            user = User()
-            user.id = p.id
-            return user
+            return p
 
     def fetch(self, uid, request) -> User | None:
         sqlsession = request.get(Session)
         p = sqlsession.get(Person, uid)
-        user = User()
-        user.id = p.id
-        return user
+        return p
 
 
 class SQLDatabase(Service):
