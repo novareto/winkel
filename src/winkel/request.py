@@ -17,7 +17,10 @@ class Environ:
 
     def get(self, name, default=None):
         return self._environ.get(name, default=default) 
-    
+
+    def __getitem__(self, name):
+        return self._environ[name]
+
     def __init__(self, environ: horseman.types.Environ):
         self._environ = environ
         self.method = self._environ.get('REQUEST_METHOD', 'GET').upper()
@@ -45,7 +48,7 @@ class Environ:
 
     @cached_property
     def content_type(self) -> horseman.datastructures.ContentType | None:
-        if 'CONTENT_TYPE' in self:
+        if 'CONTENT_TYPE' in self._environ:
             return horseman.datastructures.ContentType(
                 self._environ.get('CONTENT_TYPE', '')
             )
@@ -106,7 +109,7 @@ class Request(ActivationScope):
         self.scoped_services[key] = value
 
     def __contains__(self, key):
-        return key in self.scoped_services or key in self.provider
+        return key in self.scoped_services
 
 
 

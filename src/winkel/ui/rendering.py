@@ -83,8 +83,8 @@ def ui_endpoint(wrapped=None, *, layout_name: str = ""):
         if instance:
             namespace |= instance.namespace(request)
 
-        layout = ui.layouts.lookup(request, name=layout_name).value
-        content = layout.render(content=content, **namespace)
+        layout = ui.layouts.lookup(request, name=layout_name)
+        content = layout.secure_call(request, content=content, namespace=namespace)
 
         return Response(
             200,

@@ -1,5 +1,6 @@
 import typing as t
 import wrapt
+import logging
 from rodi import Container
 from dataclasses import dataclass, field
 from horseman.datastructures import Cookies, Query
@@ -87,6 +88,7 @@ class Application(RootNode):
 
     def handle_exception(self, exc_info: ExceptionInfo, environ: Environ):
         typ, err, tb = exc_info
+        logging.critical(err, exc_info=True)
         return Response(500, str(err))
 
     def trigger(self, name: str, *args, **kwargs):

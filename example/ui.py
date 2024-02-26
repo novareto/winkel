@@ -8,6 +8,12 @@ from actions import Actions
 
 
 slots = SignatureMapping()
+layouts = SignatureMapping()
+
+@layouts.register((Request,), name="")
+@template('layout')
+def default_layout(request, **namespace):
+    return namespace
 
 
 @slots.register((Request, Any, Any), name='actions')

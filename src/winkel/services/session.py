@@ -59,7 +59,7 @@ class HTTPSession(Service):
         )
 
     @handlers.on_response
-    def on_response(self, app, request, response):
+    def ensure_cookie(self, app, request, response) -> None:
         session = request.get(Session)
         if not session.modified and (
                 session.new and self.save_new_empty):
@@ -88,4 +88,4 @@ class HTTPSession(Service):
             httponly=self.httponly
         )
         response.cookies[self.manager.cookie_name] = cookie
-        return response
+

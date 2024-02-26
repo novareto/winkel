@@ -2,6 +2,7 @@ import abc
 import typing as t
 from http_session.session import Session
 from .request import Request
+from winkel.service import Service, factories
 
 
 class User(abc.ABC):
@@ -48,18 +49,28 @@ class DictSource(Source):
             return user
 
 
-class Authenticator:
+class Authenticator(abc.ABC):
+    @abc.abstractmethod
+    def from_credentials(self, request, credentials: dict) -> User | None:
+        ...
 
+    @abc.abstractmethod
+    def identify(self, request) -> User:
+        ...
+
+    @abc.abstractmethod
+    def forget(self, request) -> None:
+        ...
+
+    @abc.abstractmethod
+    def remember(self, request, user: User) -> None:
+        ...
+
+
+class SessionAuthenticator(Authenticator, Service):
     user_key: str
-    sources: t.Iterable[Source]
-
-    def __init__(self, user_key: str, sources: t.Iterable[Source]):
-        self.sources = sources
-        self.user_key = user_key
-
-    def install(self, services, hooks):
-        services.register(Authenticator, instance=self)
-        services.add_scoped_by_factory(self.identify)
+    sources: tuple[Source, ...]
+    __dependencies__ = [Session]
 
     def from_credentials(self,
                          request, credentials: dict) -> User | None:
@@ -68,6 +79,11 @@ class Authenticator:
             if user is not None:
                 return user
 
+    @factories.singleton
+    def auth_service(self, request) -> Authenticator:
+        return self
+
+    @factories.scoped
     def identify(self, request) -> User:
         session = request.get(Session)
         if (userid := session.get(self.user_key, None)) is not None:
@@ -77,10 +93,10 @@ class Authenticator:
                     return user
         return anonymous
 
-    def forget(self, request) -> t.NoReturn:
+    def forget(self, request) -> None:
         session = request.get(Session)
         session.clear()
 
-    def remember(self, request, user: User) -> t.NoReturn:
+    def remember(self, request, user: User) -> None:
         session = request.get(Session)
         session[self.user_key] = user.id
