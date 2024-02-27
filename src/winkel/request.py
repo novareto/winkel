@@ -2,21 +2,22 @@ import typing as t
 import urllib.parse
 import horseman.parsers
 import horseman.datastructures
-import horseman.types
+from horseman.types import Environ
 from functools import cached_property
 from horseman.parsers import Data
 from rodi import ActivationScope, Services
+from contextlib import ExitStack
 
 
 T = t.TypeVar("T")
 
 
-class Environ:
-    
-    _environ: horseman.types.Environ
+class Request:
+
+    _environ: Environ
 
     def get(self, name, default=None):
-        return self._environ.get(name, default=default) 
+        return self._environ.get(name, default=default)
 
     def __getitem__(self, name):
         return self._environ[name]
@@ -88,20 +89,19 @@ class Environ:
             data = Data()
         return data
 
-from contextlib import ExitStack
 
-class Request(ActivationScope):
+class Scope(ActivationScope):
 
     def __init__(self,
-                 environ,
+                 environ: Environ,
                  stack: ExitStack | None = None,
                  provider: Services | None = None,
                  scoped_services: t.Dict[t.Type[T] | str, T] | None = None):
-        self.environ = Environ(environ)
+        self.request = Request(environ)
         self.provider = provider or Services()
         if scoped_services is None:
             scoped_services = {}
-        scoped_services[Environ] = self.environ
+        scoped_services[Request] = self.request
         self.scoped_services = scoped_services
         self.stack = stack or ExitStack()
 
@@ -113,4 +113,4 @@ class Request(ActivationScope):
 
 
 
-__all__ = ['Environ', 'Request']
+__all__ = ['Request', 'Scope']

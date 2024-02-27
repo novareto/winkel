@@ -7,7 +7,7 @@ from winkel.auth import User
 from winkel.components.view import APIView
 from winkel.components.router import RouteStore
 from winkel.services.flash import SessionMessages
-from winkel.ui.rendering import ui_endpoint, template
+from winkel.ui.rendering import html_endpoint, renderer
 from winkel.components import Params
 from winkel.app import Application
 from models import Folder
@@ -24,8 +24,8 @@ folder_schema = jsonschema_colander.types.Object.from_json(
     }
 )
 
-def folder_creation_form(request):
-    schema = folder_schema().bind(request=request)
+def folder_creation_form(scope):
+    schema = folder_schema().bind(scope=scope)
     process_btn = deform.form.Button(name='process', title="Process")
     return deform.form.Form(schema, buttons=(process_btn,))
 
@@ -33,48 +33,45 @@ def folder_creation_form(request):
 @routes.register('/folders/new', name="folder_create")
 class CreateFolder(APIView):
 
-    def namespace(self, request):
-        return {'view': self}
-
-    @ui_endpoint
-    @template('form/default')
-    def GET(self, request):
-        form = folder_creation_form(request)
+    @html_endpoint
+    @renderer(template='form/default')
+    def GET(self, scope):
+        form = folder_creation_form(scope)
         return {
             "rendered_form": form.render()
         }
 
-    @ui_endpoint
-    @template('form/default')
-    def POST(self, request):
-        data = request.get(Data)
+    @html_endpoint
+    @renderer(template='form/default')
+    def POST(self, scope):
+        data = scope.get(Data)
         if ('process', 'process') not in data.form:
             raise NotImplementedError('No action found.')
 
         try:
-            form = folder_creation_form(request)
+            form = folder_creation_form(scope)
             appstruct = form.validate(data.form)
         except deform.exception.ValidationFailure as e:
             return {
                 "rendered_form": e.render()
             }
 
-        sqlsession = request.get(Session)
-        user = request.get(User)
+        sqlsession = scope.get(Session)
+        user = scope.get(User)
         sqlsession.add(Folder(author_id=user.id, **appstruct))
 
-        flash = request.get(SessionMessages)
+        flash = scope.get(SessionMessages)
         flash.add('Folder created.', type="info")
-        return Response.redirect(request.environ.application_uri)
+        return Response.redirect(scope.request.application_uri)
 
 
 @routes.register('/folders/{folder_id}', name="folder_view")
-@ui_endpoint
-@template('views/folder')
-def folder_view(request):
-    application = request.get(Application)
-    sqlsession = request.get(Session)
-    params = request.get(Params)
+@html_endpoint
+@renderer(template='views/folder')
+def folder_view(scope):
+    application = scope.get(Application)
+    sqlsession = scope.get(Session)
+    params = scope.get(Params)
     folder = sqlsession.get(Folder, params['folder_id'])
     return {
         "folder": folder,

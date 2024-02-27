@@ -3,24 +3,24 @@ from typing import Callable, Any
 from inspect import isclass
 from chameleon.codegen import template
 from chameleon.astutil import Symbol
-from winkel.request import Environ
+from winkel.request import Scope
+from winkel.ui import UI
+from winkel.components import MatchedRoute
 
 
-Slot = Callable[[Environ, str, Any], str]
+Slot = Callable[[Scope, str, Any], str]
 
 
 def query_slot(econtext, name):
     """Compute the result of a slot expression
     """
-    ui = econtext.get('ui', None)
-    if ui is None:
-        return None
-    request = econtext.get('request')
-    view = econtext.get('view', object())
+    scope = econtext.get('scope')  # mandatory.
     context = econtext.get('context', object())
+    view = econtext.get('view', scope.get(MatchedRoute).route.value)
+    ui = econtext.get('ui', scope.get(UI))
     try:
-        manager = ui.slots.lookup(request, view, context, name=name)
-        if manager.evaluate(request, view, context):
+        manager = ui.slots.lookup(scope, view, context, name=name)
+        if manager.evaluate(view, context, scope=scope):
             return None
 
         if isclass(manager.value):
@@ -28,9 +28,9 @@ def query_slot(econtext, name):
         else:
             manager = manager.value
 
-        slots = ui.slots.match_grouped(request, manager, view, context)
+        slots = ui.slots.match_grouped(scope, manager, view, context)
         return manager(
-            request, view, context, slots.values()
+            scope, view, context, slots=slots.values()
         )
 
     except LookupError:

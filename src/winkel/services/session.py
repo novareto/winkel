@@ -37,13 +37,13 @@ class HTTPSession(Service):
         )
 
     @factories.scoped
-    def http_session_factory(self, context) -> Session:
-        return context.stack.enter_context(self.http_session(context))
+    def http_session_factory(self, scope) -> Session:
+        return scope.stack.enter_context(self.http_session(scope))
 
     @contextmanager
-    def http_session(self, context):
+    def http_session(self, scope):
         new = True
-        cookies = context.get(Cookies)
+        cookies = scope.get(Cookies)
         if (sig := cookies.get(self.manager.cookie_name)):
             try:
                 sid = str(self.manager.verify_id(sig), 'utf-8')
@@ -68,15 +68,15 @@ class HTTPSession(Service):
         except:
             print('An error occured, we do not touch the session')
         else:
-            response = context.get(Response)
+            response = scope.get(Response)
             if not session.modified and (
                     session.new and self.save_new_empty):
                 session.save()
 
             if session.modified:
                 if response.status < 400:
-                    if TransactionManager in context:
-                        tm = context.get(TransactionManager)
+                    if TransactionManager in scope:
+                        tm = scope.get(TransactionManager)
                         if not tm.isDoomed():
                             session.persist()
                     else:
@@ -86,10 +86,10 @@ class HTTPSession(Service):
                 return
 
             domain = self.domain or \
-                context.environ['HTTP_HOST'].split(':', 1)[0]
+                scope.request['HTTP_HOST'].split(':', 1)[0]
             cookie = self.manager.cookie(
                 session.sid,
-                context.environ.script_name or '/',
+                scope.request.script_name or '/',
                 domain,
                 secure=self.secure,
                 samesite=self.samesite,

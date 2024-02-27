@@ -20,17 +20,17 @@ class NoAnonymous(Service):
             allowed.add(PurePosixPath(self.login_url))
         return frozenset(allowed)
 
-    @handlers.on_request
-    def check_access(self, app, request) -> Response | None:
+    @handlers.before_route
+    def check_access(self, app, scope) -> Response | None:
         # we skip unnecessary checks if it's not protected.
-        path = PurePosixPath(request.environ.path)
+        path = PurePosixPath(scope.request.path)
         for bypass in self.unprotected:
             if path.is_relative_to(bypass):
                 return None
 
-        user = request.get(User)
+        user = scope.get(User)
         if user is anonymous:
             if self.login_url is None:
                 raise HTTPError(403)
             return Response.redirect(
-                request.environ.script_name + self.login_url)
+                scope.request.script_name + self.login_url)

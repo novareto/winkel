@@ -6,7 +6,7 @@ from winkel.response import Response
 from winkel.components.router import RouteStore
 from winkel.components.view import APIView
 from winkel.services.flash import SessionMessages
-from winkel.ui.rendering import ui_endpoint, template
+from winkel.ui.rendering import html_endpoint, renderer
 from sqlalchemy.sql import exists
 from sqlmodel import Session
 
@@ -15,8 +15,8 @@ routes = RouteStore()
 
 
 def UniqueEmail(node, value):
-    request = node.bindings['request']
-    sqlsession = request.get(Session)
+    scope = node.bindings['scope']
+    sqlsession = scope.get(Session)
     if sqlsession.query(exists().where(Person.email == value)).scalar():
         raise colander.Invalid(node, "Email already in use.")
 
@@ -54,8 +54,8 @@ class RegistrationSchema(colander.Schema):
     )
 
 
-def register_form(request):
-    schema = RegistrationSchema().bind(request=request)
+def register_form(scope):
+    schema = RegistrationSchema().bind(scope=scope)
     process_btn = deform.form.Button(name='process', title="Process")
     return deform.form.Form(schema, buttons=(process_btn,))
 
@@ -63,35 +63,32 @@ def register_form(request):
 @routes.register('/register')
 class Register(APIView):
 
-    def namespace(self, request):
-        return {'view': self}
-
-    @ui_endpoint
-    @template('form/default')
-    def GET(self, request):
-        form = register_form(request)
+    @html_endpoint
+    @renderer(template='form/default')
+    def GET(self, scope):
+        form = register_form(scope)
         return {
             "rendered_form": form.render()
         }
 
-    @ui_endpoint
-    @template('form/default')
-    def POST(self, request):
-        data = request.get(Data)
+    @html_endpoint
+    @renderer(template='form/default')
+    def POST(self, scope):
+        data = scope.get(Data)
         if ('process', 'process') not in data.form:
             raise NotImplementedError('No action found.')
 
         try:
-            form = register_form(request)
+            form = register_form(scope)
             appstruct = form.validate(data.form)
         except deform.exception.ValidationFailure as e:
             return {
                 "rendered_form": e.render()
             }
 
-        sqlsession = request.get(Session)
+        sqlsession = scope.get(Session)
         sqlsession.add(Person(**appstruct))
 
-        flash = request.get(SessionMessages)
+        flash = scope.get(SessionMessages)
         flash.add('Account created.', type="info")
-        return Response.redirect(request.environ.application_uri)
+        return Response.redirect(scope.request.application_uri)

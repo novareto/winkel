@@ -2,12 +2,12 @@ import abc
 import typing as t
 from functools import reduce
 from winkel.datastructures import PriorityChain
-from winkel.request import Request
+from winkel.request import Scope
 from winkel.response import Response
 from winkel.service import Configuration
 
 
-Handler = t.Callable[[Request], Response]
+Handler = t.Callable[[Scope], Response]
 HandlerWrapper = t.Callable[[Handler], Handler]
 
 

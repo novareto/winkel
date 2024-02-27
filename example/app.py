@@ -32,38 +32,8 @@ app.router |= (
     folder.routes | document.routes
 )
 
-
-class Whatever:
-    pass
-
-
-from contextlib import contextmanager
-
-@contextmanager
-def mywhatever():
-    whatever = Whatever()
-    try:
-        yield whatever
-    except:
-        print('oops')
-    finally:
-        print('closing my whatever')
-
-def whatever_factory(scope) -> Whatever:
-    whatever = scope.stack.enter_context(mywhatever())
-    return whatever
-
-app.services.add_scoped_by_factory(whatever_factory)
-
-@app.router.register('/test/ok')
-def test(request):
-    print(request.get(Whatever))
-    return Response(200, body=b'whatever')
-
-
-@app.router.register('/test/ko')
-def test2(request):
-    print(request.get(Whatever))
+@app.router.register('/test/error')
+def test2(scope):
     raise NotImplementedError("Damn")
 
 
@@ -92,4 +62,10 @@ app.use(
     Flash()
 )
 
+
 wsgi_app = Fanstatic(app)
+
+
+if __name__ == "__main__":
+    import bjoern
+    bjoern.run(wsgi_app, "127.0.0.1", 8000)

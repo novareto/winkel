@@ -3,99 +3,102 @@ import functools
 from horseman.response import Response
 from chameleon.zpt.template import PageTemplate
 from winkel.ui import UI
+from winkel.request import Scope, Request
 
 
-def template(template: PageTemplate | str):
-
-    @wrapt.decorator
-    def templated(wrapped, instance, args, kwargs) -> str:
-        content = wrapped(*args, **kwargs)
-        if isinstance(content, (Response, str)):
-            return content
-
-        if not isinstance(content, dict):
-            raise TypeError(f'Do not know how to render {content!r}.')
-
-        request = args[0]
-        ui = request.get(UI)
-
-        namespace = {
-            'request': request,
-            'ui': ui,
-            'macros': ui.macros
-        }
-
-        if instance:
-            namespace |= instance.namespace(request) | content
-        else:
-            namespace |= content
-
-        if isinstance(template, str):
-            tpl = ui.templates[template]
-        else:
-            tpl = template
-
-        return tpl.render(**namespace)
-
-    return templated
-
-
-def ui_endpoint(wrapped=None, *, layout_name: str = ""):
+def renderer(wrapped=None, *,
+             template: PageTemplate | str | None = None,
+             layout_name: str = ""):
 
     @wrapt.decorator
-    def response_wrapped(wrapped, instance, args, kwargs) -> Response:
+    def rendering_wrapper(wrapped, instance, args, kwargs) -> str:
         content = wrapped(*args, **kwargs)
+
         if isinstance(content, Response):
             return content
 
-        if not isinstance(content, str):
-            raise TypeError('Do not know how to render.')
-
-        request = args[0]
-        ui = request.get(UI)
-        ui.inject_resources()
-
-        return Response(
-            200,
-            body=content,
-            headers={"Content-Type": "text/html; charset=utf-8"}
-        )
-
-    @wrapt.decorator
-    def ui_wrapped(wrapped, instance, args, kwargs) -> Response:
-        content = wrapped(*args, **kwargs)
-        if isinstance(content, Response):
-            return content
-
-        if not isinstance(content, str):
-            raise TypeError('Do not know how to render.')
-
-        request = args[0]
-        ui = request.get(UI)
-        ui.inject_resources()
-
+        scope = args[0]
+        ui = scope.get(UI)
         namespace = {
-            'request': request,
-            'ui': ui,
-            'macros': ui.macros
-        }
+                'scope': scope,
+                'request': scope.request,
+                'ui': ui,
+                'macros': ui.macros,
+                'view': instance or wrapped,
+                'context': object()
+            }
 
-        if instance:
-            namespace |= instance.namespace(request)
+        if template is not None:
+            if not isinstance(content, dict):
+                raise TypeError(
+                    'Template defined but no namespace returned.')
+            if isinstance(template, str):
+                tpl = ui.templates[template]
+            else:
+                tpl = template
 
-        layout = ui.layouts.lookup(request, name=layout_name)
-        content = layout.secure_call(request, content=content, namespace=namespace)
+            if instance and hasattr(instance, 'namespace'):
+                namespace = instance.namespace(scope) | content | namespace
+            else:
+                namespace = content | namespace
+            rendered = tpl.render(**namespace)
 
-        return Response(
-            200,
-            body=content,
-            headers={"Content-Type": "text/html; charset=utf-8"}
-        )
+        elif isinstance(content, str):
+            rendered = content
+        elif not isinstance(content, str):
+            raise TypeError(
+                f'Unable to render type: {type(content)}.')
+
+        if layout_name is not None:
+            view = namespace['view']
+            context = namespace['context']
+            layout = ui.layouts.lookup(
+                scope, view, context, name=layout_name
+            )
+            return layout.secure_call(
+                scope, view, context,
+                name=layout_name, content=rendered, namespace=namespace
+            )
+
+        return rendered
 
     if wrapped is None:
-        return functools.partial(ui_endpoint, layout_name=layout_name)
+        return functools.partial(
+            renderer, template=template, layout_name=layout_name
+        )
 
-    if layout_name is None:
-        return response_wrapped(wrapped)
+    return rendering_wrapper(wrapped)
 
-    return ui_wrapped(wrapped)
+
+@wrapt.decorator
+def html_endpoint(wrapped, instance, args, kwargs) -> Response:
+    content = wrapped(*args, **kwargs)
+    if isinstance(content, Response):
+        return content
+    if not isinstance(content, str):
+        raise TypeError(
+            f'Unable to render type: {type(content)}.')
+
+    scope = args[0]
+    ui = scope.get(UI)
+    ui.inject_resources()
+
+    return Response(
+        200,
+        body=content,
+        headers={"Content-Type": "text/html; charset=utf-8"}
+    )
+
+
+@wrapt.decorator
+def json_endpoint(wrapped, instance, args, kwargs) -> Response:
+    content = wrapped(*args, **kwargs)
+    if isinstance(content, Response):
+        return content
+    if not isinstance(content, (dict, list)):
+        raise TypeError(f'Unable to render type: {type(content)}.')
+    return Response.to_json(
+        200,
+        body=content,
+        headers={"Content-Type": "application/json"}
+    )

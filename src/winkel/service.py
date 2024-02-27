@@ -31,11 +31,11 @@ def get_marked_groups(instance):
 
 
 class handlers:
-    on_request = marker('request')
+    before_route = marker('before_route')
 
     @staticmethod
     def apply(hooks, groups):
-        for name in ('request',):
+        for name in ('before_route',):
             if factories := groups.get(name):
                 for factory in factories:
                     hooks[name].add(factory)

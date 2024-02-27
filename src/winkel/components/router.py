@@ -8,7 +8,7 @@ from horseman.exceptions import HTTPError
 from elementalist.element import Element
 from elementalist.collections import ElementMapping
 from winkel.components.utils import get_routables
-from winkel.request import Request
+from winkel.request import Scope
 
 
 class Params(frozendict):
@@ -30,8 +30,8 @@ class MatchedRoute(t.NamedTuple):
     method: HTTPMethod
     params: Params
 
-    def __call__(self, context: Request):
-        return self.route.secure_call(context)
+    def __call__(self, scope: Scope):
+        return self.route.secure_call(scope)
 
 
 class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
