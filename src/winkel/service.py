@@ -32,12 +32,10 @@ def get_marked_groups(instance):
 
 class handlers:
     on_request = marker('request')
-    on_response = marker('response')
-    on_error = marker('error')
 
     @staticmethod
     def apply(hooks, groups):
-        for name in ('request', 'response', 'error'):
+        for name in ('request',):
             if factories := groups.get(name):
                 for factory in factories:
                     hooks[name].add(factory)

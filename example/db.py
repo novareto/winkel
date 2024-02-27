@@ -6,8 +6,9 @@ from sqlmodel import Session
 from sqlmodel import SQLModel, create_engine
 from sqlalchemy import select
 from sqlalchemy.engine.base import Engine
-from winkel.service import Service, factories, handlers
+from winkel.service import Service, factories
 from transaction import TransactionManager
+from contextlib import contextmanager
 
 
 class DBSource(Source):
@@ -39,32 +40,22 @@ class SQLDatabase(Service):
 
     @factories.scoped
     def session_factory(self, context) -> Session:
+        return context.stack.enter_context(self.sqlsession(context))
+
+    @contextmanager
+    def sqlsession(self, context):
         engine = context.get(Engine)
-        session = Session(engine)
-        session.begin()
-        return session
+        with Session(engine) as session:
+            yield session
+            response = context.get(Response)
+            if response.status >= 400:
+                session.rollback()
+                return
 
-    @handlers.on_response
-    def ensure_commit(self, app, request, response) -> None:
-        if Session not in request:
-            return
+            if TransactionManager in context:
+                txn = context.get(TransactionManager)
+                if txn.isDoomed():
+                    session.rollback()
+                    return
 
-        sqlsession = request.get(Session)
-        if response.status < 400:
-            if TransactionManager in request:
-                tm = request.get(TransactionManager)
-                if not tm.isDoomed():
-                    sqlsession.commit()
-                else:
-                    sqlsession.rollback()
-            else:
-                sqlsession.commit()
-        else:
-            sqlsession.rollback()
-        sqlsession.close()
-
-    @handlers.on_error
-    def rollback(self, app, request, error) -> None:
-        if Session in request:
-            sqlsession = request.get(Session)
-            sqlsession.rollback()
+            session.commit()

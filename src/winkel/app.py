@@ -1,5 +1,4 @@
 import typing as t
-import wrapt
 import logging
 from rodi import Container
 from dataclasses import dataclass, field
@@ -7,7 +6,7 @@ from horseman.datastructures import Cookies, Query
 from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
 from horseman.parsers import Data
-from horseman.types import Environ, ExceptionInfo
+from horseman.types import Environ as WSGIEnviron, ExceptionInfo
 from winkel.components import Router, MatchedRoute, Params
 from winkel.request import Request, Environ
 from winkel.response import Response
@@ -44,27 +43,6 @@ def get_form_data(context) -> Data:
     return environ.extract()
 
 
-@wrapt.decorator
-def lifecycle(wrapped, instance, args, kwargs):
-    if instance is None:
-        raise NotImplementedError('Lifecycle needs to wrap an app method.')
-
-    request = args[0]
-    response = instance.trigger('request', request)
-    if response is not None:
-        return response
-    try:
-        response = wrapped(*args, **kwargs)
-        instance.trigger('response', request, response)
-    except Exception as error:
-        response = instance.trigger('error', request, error)
-        if response is not None:
-            return response
-        raise
-    else:
-        return response
-
-
 @dataclass(kw_only=True, slots=True)
 class Application(RootNode):
 
@@ -86,7 +64,7 @@ class Application(RootNode):
         for component in components:
             component.install(self.services, self.hooks)
 
-    def handle_exception(self, exc_info: ExceptionInfo, environ: Environ):
+    def handle_exception(self, exc_info: ExceptionInfo, environ: WSGIEnviron):
         typ, err, tb = exc_info
         logging.critical(err, exc_info=True)
         return Response(500, str(err))
@@ -98,8 +76,11 @@ class Application(RootNode):
                 if response is not None:
                     return response
 
-    @lifecycle
-    def endpoint(self, request: Request):
+    def endpoint(self, request: Request) -> Response:
+        response = self.trigger('request', request)
+        if response is not None:
+            return response
+
         route: MatchedRoute | None = self.router.match(
             request.environ.path,
             request.environ.method
@@ -110,7 +91,7 @@ class Application(RootNode):
         request.register(MatchedRoute, route)
         return route(request)
 
-    def resolve(self, path: str, environ: Environ) -> Response:
+    def resolve(self, path: str, environ: WSGIEnviron) -> Response:
         if self.mounts:
             if (mounted := self.mounts.resolve(path, environ)) is not None:
                 return mounted.resolve(path, environ)
@@ -122,5 +103,5 @@ class Application(RootNode):
                     response = self.endpoint(request)
                 except HTTPError as err:
                     response = Response(err.status, err.body)
+                request.register(Response, response)
                 return response
-

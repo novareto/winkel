@@ -9,7 +9,7 @@ from winkel.ui import UI
 from winkel.ui.slot import SlotExpr
 from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.services import Transactional, HTTPSession, NoAnonymous, Flash
-import register, login, views, actions, db, ui, models, folder, document
+import register, login, views, actions, db, ui, folder, document
 
 
 app = Application()

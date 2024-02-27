@@ -1,26 +1,22 @@
+from typing import Callable
+from contextlib import contextmanager
 from transaction import TransactionManager
-from winkel.service import Service, handlers, factories
+from winkel.response import Response
+from winkel.service import Service, factories
 
 
 class Transactional(Service):
+    factory: Callable[[], TransactionManager] = TransactionManager
 
     @factories.scoped
     def transaction_factory(self, context) -> TransactionManager:
-        manager = TransactionManager()
-        manager.begin()
-        return manager
+        return context.stack.enter_context(self.transactional(context))
 
-    @handlers.on_response
-    def abort_or_commit(self, app, request, response) -> None:
-        if TransactionManager in request:
-            txn = request.get(TransactionManager)
+    @contextmanager
+    def transactional(self, context):
+        manager = self.factory()
+        with manager as txn:
+            yield manager
+            response = context.get(Response)
             if txn.isDoomed() or response.status >= 400:
                 txn.abort()
-            else:
-                txn.commit()
-
-    @handlers.on_error
-    def handle_error(self, app, request, error):
-        if TransactionManager in request:
-            txn = request.get(TransactionManager)
-            txn.abort()

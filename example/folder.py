@@ -1,4 +1,3 @@
-import colander
 import deform
 import jsonschema_colander.types
 from sqlmodel import Session
@@ -7,7 +6,6 @@ from winkel.response import Response
 from winkel.auth import User
 from winkel.components.view import APIView
 from winkel.components.router import RouteStore
-from winkel.auth import Authenticator
 from winkel.services.flash import SessionMessages
 from winkel.ui.rendering import ui_endpoint, template
 from winkel.components import Params

@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from typing import Set
 from fanstatic import Group, Resource
 from winkel.templates import Templates
-from winkel.request import Request
 from elementalist.registries import SignatureMapping
 
 
