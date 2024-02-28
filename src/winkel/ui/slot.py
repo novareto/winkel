@@ -16,7 +16,7 @@ def query_slot(econtext, name):
     """
     scope = econtext.get('scope')  # mandatory.
     context = econtext.get('context', object())
-    view = econtext.get('view', scope.get(MatchedRoute).route.value)
+    view = econtext.get('view', object())
     ui = econtext.get('ui', scope.get(UI))
     try:
         manager = ui.slots.lookup(scope, view, context, name=name)

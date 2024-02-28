@@ -9,7 +9,7 @@ from winkel.meta import URLTools
 
 def renderer(wrapped=None, *,
              template: PageTemplate | str | None = None,
-             layout_name: str = ""):
+             layout_name: str | None = ""):
 
     @wrapt.decorator
     def rendering_wrapper(wrapped, instance, args, kwargs) -> str:

@@ -28,15 +28,15 @@ def actions(scope: Scope, view: Any, context: Any, *, slots):
         if result is not None:
             evaluated.append((action, result))
     return {
-        "actions": evaluated
+        "actions": evaluated,
+        'view': view,
+        'context': context,
+        'manager': actions
     }
 
 
 @slots.register((Scope, Any, Any), name='above_content')
 class AboveContent:
-
-    def namespace(self, scope):
-        return {'manager': self}
 
     @renderer(template='slots/above', layout_name=None)
     def __call__(self, scope: Scope, view: Any, context: Any, *, slots):
@@ -45,19 +45,19 @@ class AboveContent:
             result = slot.conditional_call(scope, self, view, context)
             if result is not None:
                 items.append(result)
-        return {'items': items}
+        return {'items': items, 'view': view, 'context': context, 'manager': self}
 
 
 @slots.register((Scope, AboveContent, Any, Any), name='messages')
 @renderer(template='slots/messages', layout_name=None)
 def messages(scope: Scope, manager: AboveContent, view: Any, context: Any):
     flash = scope.get(SessionMessages)
-    return {'messages': list(flash)}
+    return {'messages': list(flash), 'view': view, 'context': context, 'manager': manager}
 
 
 @slots.register((Scope, AboveContent, Any, Any), name='identity')
 def identity(scope: Scope, manager: AboveContent, view: Any, context: Any):
     who_am_i = scope.get(User)
     if who_am_i is anonymous:
-        return "<div class='container alert alert-secondary'>Not logged in. Please consider creating an account or logging in.</div>"
+        return "<div class='container alert alert-secondary'>Not logged in.</div>"
     return f"<div class='container alert alert-info'>You are logged in as {who_am_i.id}</div>"
