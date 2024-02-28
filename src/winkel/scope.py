@@ -27,4 +27,4 @@ class Scope(ActivationScope):
         self.scoped_services[key] = value
 
     def __contains__(self, key):
-        return key in self.scoped_services
+        return key in self.scoped_services or key in self.provider

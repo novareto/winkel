@@ -37,11 +37,12 @@ def renderer(wrapped=None, *,
                 tpl = template
 
             namespace |= content
-            translator = scope.get(Translator)
-            locale = scope.get(Locale)
+
+            translator: Translator | None = scope.get(Translator, default=None)
+            locale: str | None = scope.get(Locale, default=None)
             rendered = tpl.render(
                 **namespace,
-                translate=translator.translate,
+                translate=translator and translator.translate or None,
                 target_language=locale
             )
 
