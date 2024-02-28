@@ -18,6 +18,7 @@ def query_slot(econtext, name):
     context = econtext.get('context', object())
     view = econtext.get('view', object())
     ui = econtext.get('ui', scope.get(UI))
+
     try:
         manager = ui.slots.lookup(scope, view, context, name=name)
         if manager.evaluate(view, context, scope=scope):

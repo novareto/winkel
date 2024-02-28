@@ -38,10 +38,7 @@ def renderer(wrapped=None, *,
             else:
                 tpl = template
 
-            if instance and hasattr(instance, 'namespace'):
-                namespace = instance.namespace(scope) | content | namespace
-            else:
-                namespace = content | namespace
+            namespace |= content
             rendered = tpl.render(**namespace)
 
         elif isinstance(content, str):
@@ -58,7 +55,7 @@ def renderer(wrapped=None, *,
             )
             return layout.secure_call(
                 scope, view, context,
-                name=layout_name, content=rendered, namespace=namespace
+                name=layout_name, content=rendered
             )
 
         return rendered

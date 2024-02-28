@@ -5,6 +5,7 @@ from winkel.scope import Scope
 from winkel.auth import User, anonymous
 from winkel.services.flash import SessionMessages
 from actions import Actions
+from login import Login
 
 
 slots = SignatureMapping()
@@ -13,8 +14,8 @@ layouts = SignatureMapping()
 
 @layouts.register((Scope, Any, Any), name="")
 @renderer(template='layout', layout_name=None)
-def default_layout(scope: Scope, view: Any, context: Any, **namespace):
-    return namespace
+def default_layout(scope: Scope, view: Any, context: Any, name: str, content: str):
+    return {'content': content, 'view': view, 'context': context}
 
 
 @slots.register((Scope, Any, Any), name='actions')
@@ -61,3 +62,8 @@ def identity(scope: Scope, manager: AboveContent, view: Any, context: Any):
     if who_am_i is anonymous:
         return "<div class='container alert alert-secondary'>Not logged in.</div>"
     return f"<div class='container alert alert-info'>You are logged in as {who_am_i.id}</div>"
+
+
+@slots.register((Scope, Login, Any), name='subslot')
+def sub_slot(scope: Scope, view: Login, context: Any, *, slots):
+    return "I show up only on the Login page."
