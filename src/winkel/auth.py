@@ -1,12 +1,15 @@
 import abc
+import uuid
 import typing as t
 from winkel.meta import HTTPSession
 from winkel.scope import Scope
 from winkel.service import Service, factories
 
 
+UserID = str | int | uuid.UUID
+
 class User(abc.ABC):
-    id: t.Union[str, int]
+    id: UserID
 
 
 class AnonymousUser(User):
@@ -20,20 +23,20 @@ class Source(abc.ABC):
 
     @abc.abstractmethod
     def find(self,
-             credentials: t.Dict, scope: Scope) -> t.Optional[User]:
+             credentials: t.Any, scope: Scope) -> User | None:
         pass
 
     @abc.abstractmethod
-    def fetch(self, uid: t.Any, scope: Scope) -> t.Optional[User]:
+    def fetch(self, uid: UserID, scope: Scope) -> User | None:
         pass
 
 
 class DictSource(Source):
 
-    def __init__(self, users: t.Mapping[str, str]):
+    def __init__(self, users: dict[str, str]):
         self.users = users
 
-    def find(self, credentials: t.Dict, scope: Scope) -> t.Optional[User]:
+    def find(self, credentials: dict, scope: Scope) -> User | None:
         username = credentials.get('username')
         password = credentials.get('password')
         if username is not None and username in self.users:
@@ -42,7 +45,7 @@ class DictSource(Source):
                 user.id = username
                 return user
 
-    def fetch(self, uid, scope: Scope) -> t.Optional[User]:
+    def fetch(self, uid: UserID, scope: Scope) -> User | None:
         if uid in self.users:
             user = User()
             user.id = uid
