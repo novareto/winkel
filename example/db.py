@@ -3,11 +3,11 @@ from models import Person
 from winkel.scope import Scope
 from functools import cached_property
 from winkel.response import Response
-from sqlmodel import Session
-from sqlmodel import SQLModel, create_engine
+from pydantic import computed_field
+from sqlmodel import Session, SQLModel, create_engine
 from sqlalchemy import select
 from sqlalchemy.engine.base import Engine
-from winkel.service import Service, factories, computed_field
+from winkel.service import Service, factory
 from transaction import TransactionManager
 from contextlib import contextmanager
 
@@ -44,7 +44,7 @@ class SQLDatabase(Service):
         SQLModel.metadata.create_all(engine)
         return engine
 
-    @factories.scoped
+    @factory('scoped')
     def session_factory(self, scope) -> Session:
         return scope.stack.enter_context(self.sqlsession(scope))
 

@@ -1,10 +1,11 @@
 import typing as t
 import logging
 from functools import cached_property
+from pydantic import computed_field
 from horseman.exceptions import HTTPError
 from pathlib import PurePosixPath
 from winkel.auth import anonymous, User
-from winkel.service import Configuration, computed_field
+from winkel.service import Configuration
 from winkel.response import Response
 from winkel.scope import Scope
 from winkel.cors import CORSPolicy

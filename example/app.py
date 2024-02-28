@@ -14,6 +14,7 @@ import vernacular
 from vernacular import translations, Translations
 from winkel.services.translation import TranslationService
 
+
 app = Application()
 EXPRESSION_TYPES['slot'] = SlotExpr
 
@@ -107,9 +108,4 @@ logging.config.dictConfig({
 })
 
 
-
 wsgi_app = Fanstatic(app)
-
-if __name__ == "__main__":
-    import bjoern
-    bjoern.run(wsgi_app, "127.0.0.1", 8000)

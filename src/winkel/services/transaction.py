@@ -3,22 +3,22 @@ from typing import Callable
 from contextlib import contextmanager
 from transaction import TransactionManager
 from winkel.response import Response
-from winkel.service import Service, factories
+from winkel.service import Service, factory
 
 
 logger = logging.getLogger(__name__)
 
 
 class Transactional(Service):
-    factory: Callable[[], TransactionManager] = TransactionManager
+    manager: Callable[[], TransactionManager] = TransactionManager
 
-    @factories.scoped
+    @factory('scoped')
     def transaction_factory(self, context) -> TransactionManager:
         return context.stack.enter_context(self.transactional(context))
 
     @contextmanager
     def transactional(self, context):
-        manager = self.factory()
+        manager = self.manager()
         with manager as txn:
             yield manager
             response = context.get(Response)

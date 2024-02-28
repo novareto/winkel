@@ -1,3 +1,4 @@
 -e git+https://github.com/HorsemanWSGI/horseman.git#egg=horseman
 -e git+https://github.com/novareto/elementalist.git#egg=elementalist
+-e git+https://github.com/HorsemanWSGI/func_annotator.git#egg=func_annotator
 -e .

@@ -1,7 +1,7 @@
 import logging
 from annotated_types import Len
 from typing import NewType, List, Annotated
-from winkel.service import Service, factories
+from winkel.service import Service, factory
 from vernacular import Translations
 from vernacular.translate import Translator
 from content_negotiation import decide_language, NoAgreeableLanguageError
@@ -20,7 +20,7 @@ class TranslationService(Service):
 
     __provides__ = [Locale, Translator]
 
-    @factories.scoped
+    @factory('scoped')
     def locale_factory(self, scope) -> Locale:
         header = scope.environ.get('HTTP_ACCEPT_LANGUAGE')
         if header:
@@ -36,7 +36,7 @@ class TranslationService(Service):
         return Locale(self.accepted_languages[0])
 
 
-    @factories.singleton
+    @factory('singleton')
     def translator_factory(self, scope) -> Translator:
         return Translator(
             self.translations,

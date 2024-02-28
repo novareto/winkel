@@ -2,13 +2,14 @@ import itsdangerous
 import logging
 from contextlib import contextmanager
 from functools import cached_property
+from pydantic import computed_field
 from horseman.datastructures import Cookies
 from http_session.cookie import SameSite, HashAlgorithm, SignedCookieManager
 from http_session.meta import Store
 from transaction import TransactionManager
 from winkel.response import Response
 from winkel.scope import Scope
-from winkel.service import Service, factories, computed_field
+from winkel.service import Service, factory
 from winkel.meta import HTTPSession
 
 
@@ -40,7 +41,7 @@ class Session(Service):
             cookie_name=self.cookie_name,
         )
 
-    @factories.scoped
+    @factory('scoped')
     def http_session_factory(self, scope: Scope) -> HTTPSession:
         return scope.stack.enter_context(self.http_session(scope))
 

@@ -3,7 +3,7 @@ import uuid
 import typing as t
 from winkel.meta import HTTPSession
 from winkel.scope import Scope
-from winkel.service import Service, factories
+from winkel.service import Service, factory
 
 
 UserID = str | int | uuid.UUID
@@ -82,11 +82,11 @@ class SessionAuthenticator(Authenticator, Service):
             if user is not None:
                 return user
 
-    @factories.singleton
+    @factory('singleton')
     def auth_service(self, scope: Scope) -> Authenticator:
         return self
 
-    @factories.scoped
+    @factory('scoped')
     def identify(self, scope: Scope) -> User:
         session = scope.get(HTTPSession)
         if (userid := session.get(self.user_key, None)) is not None:

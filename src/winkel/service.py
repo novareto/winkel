@@ -1,42 +1,13 @@
-import inspect
 from typing import Type, ClassVar, Iterable
-from pydantic import BaseModel, ConfigDict, computed_field
-from types import MethodType
-from collections import defaultdict
+from pydantic import BaseModel, ConfigDict
+from func_annotator import annotation
 
 
-def marker(name: str):
-    def method_tagger(method: MethodType):
-        method.__marker__ = name
-        return method
-    return method_tagger
+class factory(annotation):
+    name = '__scope_factory__'
 
-
-def get_marked_groups(instance):
-    groups = defaultdict(list)
-    for name in dir(instance):
-        attr = getattr(instance, name, None)
-        if attr and inspect.ismethod(attr) and hasattr(attr, '__marker__'):
-            groups[attr.__marker__].append(attr)
-    return groups
-
-
-class factories:
-    scoped = marker('scoped')
-    transient = marker('transient')
-    singleton = marker('singleton')
-
-    @staticmethod
-    def apply(services, groups):
-        if factories := groups.get('scoped'):
-            for factory in factories:
-                services.add_scoped_by_factory(factory)
-        if factories := groups.get('transient'):
-            for factory in factories:
-                services.add_transient_by_factory(factory)
-        if factories := groups.get('singleton'):
-            for factory in factories:
-                services.add_singleton_by_factory(factory)
+    def __init__(self, factory_type: str):
+        self.annotation = factory_type
 
 
 class Installable:
@@ -50,8 +21,13 @@ class Installable:
                     raise LookupError(
                         f'Missing dependency service: {depend}')
 
-        groups = get_marked_groups(self)
-        factories.apply(services, groups)
+        for name, func in factory.find(self):
+            if name == 'scoped':
+                services.add_scoped_by_factory(func)
+            elif name == "transient":
+                services.add_transient_by_factory(func)
+            elif name == "singleton":
+                services.add_singleton_by_factory(func)
 
 
 class Configuration(BaseModel):

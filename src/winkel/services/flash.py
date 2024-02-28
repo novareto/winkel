@@ -1,6 +1,6 @@
 import typing as t
 from winkel.scope import Scope
-from winkel.service import Service, factories
+from winkel.service import Service, factory
 from winkel.meta import HTTPSession
 
 
@@ -37,7 +37,7 @@ class Flash(Service):
     key: str = "flashmessages"
     __dependencies__ = [HTTPSession]
 
-    @factories.scoped
+    @factory("scoped")
     def messages_factory(self, scope: Scope) -> SessionMessages:
         session = scope.get(HTTPSession)
         return SessionMessages(session, key=self.key)
