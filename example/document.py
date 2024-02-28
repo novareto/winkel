@@ -7,8 +7,7 @@ from winkel.auth import User
 from winkel.components.view import APIView
 from winkel.components.router import RouteStore
 from winkel.services.flash import SessionMessages
-from winkel.ui.rendering import html_endpoint, renderer
-from winkel.meta import URLTools
+from winkel.ui.rendering import html, renderer
 from winkel.components import Params
 from winkel.app import Application
 from models import Document
@@ -36,7 +35,7 @@ def document_creation_form(scope):
 @routes.register('/folders/{folder_id}/new', name="document_create")
 class CreateDocument(APIView):
 
-    @html_endpoint
+    @html
     @renderer(template='form/default')
     def GET(self, scope):
         form = document_creation_form(scope)
@@ -44,7 +43,7 @@ class CreateDocument(APIView):
             "rendered_form": form.render()
         }
 
-    @html_endpoint
+    @html
     @renderer(template='form/default')
     def POST(self, scope):
         data = scope.get(Data)
@@ -71,13 +70,12 @@ class CreateDocument(APIView):
         )
         flash = scope.get(SessionMessages)
         flash.add('Folder created.', type="info")
-        url = scope.get(URLTools)
-        return Response.redirect(url.application_uri)
+        return Response.redirect(url.environ.application_uri)
 
 
 @routes.register(
     '/folders/{folder_id}/browse/{document_id}', name="document_view")
-@html_endpoint
+@html
 @renderer(template='views/document')
 def document_view(scope):
     application = scope.get(Application)

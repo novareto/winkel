@@ -3,13 +3,12 @@ from rodi import Container
 from dataclasses import dataclass, field
 from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
-from horseman.types import Environ, ExceptionInfo
 from winkel.components import Router, MatchedRoute, Params
 from winkel.scope import Scope
 from winkel.response import Response
 from winkel.service import Installable
 from winkel.datastructures import PriorityChain
-from winkel.meta import URLTools
+from winkel.meta import Environ, ExceptionInfo
 from collections import defaultdict
 from functools import partial
 
@@ -52,7 +51,7 @@ class Application(RootNode):
     def trigger(self, name: str, *args, **kwargs):
         if name in self.hooks:
             for order, hook in self.hooks[name]:
-                response = hook(self, *args, **kwargs)
+                response = hook(*args, **kwargs)
                 if response is not None:
                     logger.debug(f'{name}: handler {hook!r} responded. Breaking early.')
                     return response
@@ -63,10 +62,9 @@ class Application(RootNode):
                 hook(self, *args, **kwargs)
 
     def endpoint(self, scope: Scope) -> Response:
-        url = scope.get(URLTools)
         route: MatchedRoute | None = self.router.match(
-            url.path,
-            url.method
+            scope.environ.path,
+            scope.environ.method
         )
         if route is None:
             raise HTTPError(404)

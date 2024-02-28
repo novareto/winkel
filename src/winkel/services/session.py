@@ -7,7 +7,6 @@ from http_session.cookie import SameSite, HashAlgorithm, SignedCookieManager
 from http_session.meta import Store
 from transaction import TransactionManager
 from winkel.response import Response
-from winkel.request import URLUtils
 from winkel.scope import Scope
 from winkel.service import Service, factories, computed_field
 from winkel.meta import HTTPSession
@@ -91,11 +90,10 @@ class Session(Service):
             elif session.new:
                 return
 
-            url = scope.get(URLUtils)
-            domain = self.domain or url.domain
+            domain = self.domain or scope.environ.domain
             cookie = self.manager.cookie(
                 session.sid,
-                url.script_name or '/',
+                scope.environ.script_name or '/',
                 domain,
                 secure=self.secure,
                 samesite=self.samesite,

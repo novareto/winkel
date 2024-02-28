@@ -1,10 +1,9 @@
 import wrapt
 import functools
-from horseman.response import Response
 from chameleon.zpt.template import PageTemplate
-from winkel.ui import UI
+from winkel.response import Response
 from winkel.scope import Scope
-from winkel.meta import URLTools
+from winkel.ui import UI
 
 
 def renderer(wrapped=None, *,
@@ -23,7 +22,6 @@ def renderer(wrapped=None, *,
         namespace = {
                 'scope': scope,
                 'ui': ui,
-                'urltools': scope.get(URLTools),
                 'macros': ui.macros,
                 'view': instance or wrapped,
                 'context': object()
@@ -69,10 +67,12 @@ def renderer(wrapped=None, *,
 
 
 @wrapt.decorator
-def html_endpoint(wrapped, instance, args, kwargs) -> Response:
+def html(wrapped, instance, args, kwargs) -> Response:
     content = wrapped(*args, **kwargs)
+
     if isinstance(content, Response):
         return content
+
     if not isinstance(content, str):
         raise TypeError(
             f'Unable to render type: {type(content)}.')
@@ -89,12 +89,15 @@ def html_endpoint(wrapped, instance, args, kwargs) -> Response:
 
 
 @wrapt.decorator
-def json_endpoint(wrapped, instance, args, kwargs) -> Response:
+def json(wrapped, instance, args, kwargs) -> Response:
     content = wrapped(*args, **kwargs)
+
     if isinstance(content, Response):
         return content
+
     if not isinstance(content, (dict, list)):
         raise TypeError(f'Unable to render type: {type(content)}.')
+
     return Response.to_json(
         200,
         body=content,

@@ -2,6 +2,7 @@ import autoroutes
 import typing as t
 from frozendict import frozendict
 from http import HTTPStatus
+from pydantic import ConfigDict
 from prejudice.types import Predicate
 from horseman.types import WSGICallable, HTTPMethod
 from horseman.exceptions import HTTPError
@@ -9,6 +10,7 @@ from elementalist.element import Element
 from elementalist.collections import ElementMapping
 from winkel.components.utils import get_routables
 from winkel.scope import Scope
+from winkel.pipeline import Pipeline, Handler
 
 
 class Params(frozendict):
@@ -17,7 +19,14 @@ class Params(frozendict):
 
 class Route(Element[str, WSGICallable]):
 
+    model_config = ConfigDict(
+        frozen=True,
+        extra='forbid',
+        arbitrary_types_allowed=True
+    )
+
     method: HTTPMethod = 'GET'
+    pipeline: Pipeline | None = None
 
     @property
     def path(self) -> str:
@@ -31,6 +40,8 @@ class MatchedRoute(t.NamedTuple):
     params: Params
 
     def __call__(self, scope: Scope):
+        if self.route.pipeline is not None:
+            return self.route.pipeline.wrap(self.route.secure_call)(scope)
         return self.route.secure_call(scope)
 
 
@@ -78,6 +89,7 @@ class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
                 method: HTTPMethod,
                 name: str = '',
                 title: str = '',
+                pipeline: t.Iterable[Handler] | None = None,
                 description: str = '',
                 conditions: t.Optional[t.Iterable[Predicate]] = None,
                 classifiers: t.Optional[t.Iterable[str]] = None,
@@ -89,12 +101,16 @@ class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
         if conditions is None:
             conditions = ()
 
+        if pipeline is not None:
+            pipeline = Pipeline(*pipeline)
+
         return self.ElementType(
             key=key,
             name=name,
             method=method,
             title=title,
             value=value,
+            pipeline=pipeline,
             description=description,
             classifiers=frozenset(classifiers),
             conditions=tuple(conditions),

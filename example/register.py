@@ -6,9 +6,8 @@ from winkel.response import Response
 from winkel.scope import Scope
 from winkel.components.router import RouteStore
 from winkel.components.view import APIView
-from winkel.meta import URLTools
 from winkel.services.flash import SessionMessages
-from winkel.ui.rendering import html_endpoint, renderer
+from winkel.ui.rendering import html, renderer
 from sqlalchemy.sql import exists
 from sqlmodel import Session
 
@@ -65,7 +64,7 @@ def register_form(scope):
 @routes.register('/register')
 class Register(APIView):
 
-    @html_endpoint
+    @html
     @renderer(template='form/default')
     def GET(self, scope):
         form = register_form(scope)
@@ -73,7 +72,7 @@ class Register(APIView):
             "rendered_form": form.render()
         }
 
-    @html_endpoint
+    @html
     @renderer(template='form/default')
     def POST(self, scope):
         data = scope.get(Data)
@@ -91,7 +90,6 @@ class Register(APIView):
         sqlsession = scope.get(Session)
         sqlsession.add(Person(**appstruct))
 
-        url = scope.get(URLTools)
         flash = scope.get(SessionMessages)
         flash.add('Account created.', type="info")
-        return Response.redirect(url.application_uri)
+        return Response.redirect(scope.environ.application_uri)
