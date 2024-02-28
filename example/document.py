@@ -40,7 +40,7 @@ class CreateDocument(APIView):
     @html
     @renderer(template='form/default')
     def POST(self, scope):
-        data = scope.get(Data)
+        data = scope.get(FormData)
         if ('process', 'process') not in data.form:
             raise NotImplementedError('No action found.')
 
@@ -64,7 +64,7 @@ class CreateDocument(APIView):
         )
         flash = scope.get(SessionMessages)
         flash.add('Folder created.', type="info")
-        return Response.redirect(url.environ.application_uri)
+        return Response.redirect(scope.environ.application_uri)
 
 
 @routes.register(
