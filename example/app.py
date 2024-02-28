@@ -2,15 +2,15 @@ import http_session_file
 import pathlib
 from fanstatic import Fanstatic
 from js.jquery import jquery
+from winkel import Application, Response, UI
 from winkel.auth import SessionAuthenticator
-from winkel.app import Application
-from winkel.ui import UI
 from winkel.ui.slot import SlotExpr
 from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.policies import NoAnonymous
 from winkel.services import Transactional, Session, Flash
 import register, login, views, actions, db, ui, folder, document, request
 import logging.config
+
 
 app = Application()
 EXPRESSION_TYPES['slot'] = SlotExpr

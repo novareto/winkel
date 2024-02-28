@@ -1,5 +1,7 @@
 import autoroutes
 import typing as t
+import types
+import inspect
 from frozendict import frozendict
 from http import HTTPStatus
 from pydantic import ConfigDict
@@ -8,9 +10,66 @@ from horseman.types import WSGICallable, HTTPMethod
 from horseman.exceptions import HTTPError
 from elementalist.element import Element
 from elementalist.collections import ElementMapping
-from winkel.components.utils import get_routables
 from winkel.scope import Scope
-from winkel.pipeline import Pipeline, Handler
+from winkel.pipeline import HandlerWrapper, wrapper
+from plum import dispatch
+from horseman.types import HTTPMethod
+from winkel.components.view import APIView
+
+
+METHODS = frozenset(t.get_args(HTTPMethod))
+HTTPMethods = t.Iterable[HTTPMethod]
+
+
+@dispatch
+def get_routables(
+        view: types.FunctionType,
+        methods: HTTPMethods | None = None):
+
+    if methods is None:
+        methods = {'GET'}
+    else:
+        unknown = set(methods) - METHODS
+        if unknown:
+            raise ValueError(
+                f"Unknown HTTP method(s): {', '.join(unknown)}")
+    yield view, methods
+
+
+@dispatch
+def get_routables(
+        view: t.Type[APIView],
+        methods: HTTPMethods | None = None):
+
+    inst = view()
+    if methods is not None:
+        raise AttributeError(
+            'Registration of APIView does not accept methods.')
+    members = inspect.getmembers(
+        inst, predicate=(lambda x: inspect.ismethod(x)
+                         and x.__name__ in METHODS))
+    for name, func in members:
+        yield func, [name]
+
+
+@dispatch
+def get_routables(
+        view: t.Type,
+        methods: HTTPMethods | None = None):
+
+    inst = view()
+    if not callable(inst):
+        raise AttributeError(
+            f'Instance of {view!r} needs to be callable.')
+
+    if methods is None:
+        methods = {'GET'}
+    else:
+        unknown = set(methods) - METHODS
+        if unknown:
+            raise ValueError(
+                f"Unknown HTTP method(s): {', '.join(unknown)}")
+    yield inst.__call__, methods
 
 
 class Params(frozendict):
@@ -18,15 +77,8 @@ class Params(frozendict):
 
 
 class Route(Element[str, WSGICallable]):
-
-    model_config = ConfigDict(
-        frozen=True,
-        extra='forbid',
-        arbitrary_types_allowed=True
-    )
-
     method: HTTPMethod = 'GET'
-    pipeline: Pipeline | None = None
+    pipeline: t.Tuple[HandlerWrapper,...] | None = None
 
     @property
     def path(self) -> str:
@@ -41,7 +93,8 @@ class MatchedRoute(t.NamedTuple):
 
     def __call__(self, scope: Scope):
         if self.route.pipeline is not None:
-            return self.route.pipeline.wrap(self.route.secure_call)(scope)
+            return wrapper(
+                self.route.pipeline, self.route.secure_call)(scope)
         return self.route.secure_call(scope)
 
 
@@ -50,8 +103,7 @@ class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
     ElementType: t.Type[Route] = Route
     _names: t.Mapping[str, str]
 
-    def __init__(self, *args, extractor=get_routables, **kwargs):
-        self.extractor = extractor
+    def __init__(self, *args, **kwargs):
         self._names = {}
         super().__init__(*args, **kwargs)
 
@@ -89,7 +141,7 @@ class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
                 method: HTTPMethod,
                 name: str = '',
                 title: str = '',
-                pipeline: t.Iterable[Handler] | None = None,
+                pipeline: t.Iterable[HandlerWrapper] | None = None,
                 description: str = '',
                 conditions: t.Optional[t.Iterable[Predicate]] = None,
                 classifiers: t.Optional[t.Iterable[str]] = None,
@@ -100,9 +152,6 @@ class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
 
         if conditions is None:
             conditions = ()
-
-        if pipeline is not None:
-            pipeline = Pipeline(*pipeline)
 
         return self.ElementType(
             key=key,
@@ -122,7 +171,7 @@ class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
                  methods: t.Optional[t.Iterable[HTTPMethod]] = None,
                  **kwargs):
         def routing(value: WSGICallable):
-            for endpoint, verbs in self.extractor(value, methods):
+            for endpoint, verbs in get_routables(value, methods):
                 for method in verbs:
                     self.create(endpoint, key, method=method, **kwargs)
             return value

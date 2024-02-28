@@ -1,12 +1,9 @@
 import colander
 import deform
-from horseman.parsers import Data
-from winkel.response import Response
 from winkel.components.view import APIView
 from winkel.components.router import RouteStore
-from winkel.auth import Authenticator
 from winkel.services.flash import SessionMessages
-from winkel.ui.rendering import html, renderer
+from winkel import html, renderer, Response, FormData, Authenticator
 
 
 routes = RouteStore()
@@ -46,7 +43,7 @@ class Login(APIView):
     @html
     @renderer(template='form/default')
     def POST(self, scope):
-        data = scope.get(Data)
+        data = scope.get(FormData)
         if ('process', 'process') not in data.form:
             raise NotImplementedError('No action found.')
 

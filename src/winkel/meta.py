@@ -1,5 +1,3 @@
-from collections.abc import Collection
-from functools import cached_property
 from http_session import Session as HTTPSession
 from horseman.datastructures import Query, Cookies, ContentType
 from horseman.parsers import Data as FormData
@@ -15,6 +13,5 @@ __all__ = [
     'Cookies',
     'ContentType',
     'FormData',
-    'Environ',
     'ExceptionInfo',
 ]

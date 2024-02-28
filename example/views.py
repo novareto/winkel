@@ -1,9 +1,5 @@
-from winkel.ui.rendering import html, json, renderer
 from winkel.components.router import RouteStore
-from winkel.auth import User
-from winkel.app import Application
-from winkel.response import Response
-from winkel.meta import Query
+from winkel import Query, Application, Response, User, html, json, renderer
 
 
 routes = RouteStore()
@@ -38,8 +34,6 @@ def some_pipe(handler):
         query = scope.get(Query)
         if query.get('die'):
             return Response(200, body='ouch, I died')
-        import pdb
-        pdb.set_trace()
         return handler(scope)
     return some_filter
 

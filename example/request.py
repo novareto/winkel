@@ -1,14 +1,29 @@
-from winkel.service import Installable
-from winkel import meta, request
+from winkel.service import Installable, factories
+from winkel import Query, Cookies, ContentType, FormData
+from winkel.scope import Scope
 
 
 class Request(Installable):
-    __provides__ = [
-        meta.Query, meta.Cookies, meta.FormData, meta.ContentType
-    ]
 
-    def install(self, services):
-        services.add_scoped_by_factory(request.query)
-        services.add_scoped_by_factory(request.cookies)
-        services.add_scoped_by_factory(request.form_data)
-        services.add_scoped_by_factory(request.content_type)
+    __provides__ = (
+        Query, Cookies, FormData, ContentType
+    )
+
+    @factories.scoped
+    def cookies(self, scope: Scope) -> Cookies:
+        return scope.environ.cookies
+
+
+    @factories.scoped
+    def query(self, scope: Scope) -> Query:
+        return scope.environ.query
+
+
+    @factories.scoped
+    def content_type(self, scope: Scope) -> ContentType:
+        return scope.environ.content_type
+
+
+    @factories.scoped
+    def form_data(self, scope: Scope) -> FormData:
+        return scope.environ.data

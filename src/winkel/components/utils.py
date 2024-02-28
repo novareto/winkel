@@ -50,23 +50,3 @@ def get_routables(view,
         yield view, methods
     else:
         raise ValueError(f'Unknown type of route: {view}.')
-
-
-def get_schemas(path: Path):
-    for f in path.iterdir():
-        if f.suffix == '.json':
-            with f.open('r') as fd:
-                metaschema = orjson.loads(fd.read())
-                namespace = metaschema.get("name", f.name)
-                version = metaschema.get("$version", 1.0)
-                permissions = metaschema.get('permissions', {})
-                if version is not None:
-                    version = float(version)
-
-                yield Element(metaschema['schema'], version,
-                              name=namespace,
-                              title=metaschema.get('title', namespace),
-                              metadata={
-                                  'ns': f"{namespace}.{version}",
-                                  'permissions': permissions
-                              })

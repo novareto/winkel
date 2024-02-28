@@ -11,6 +11,14 @@ Handler = t.Callable[[Scope], Response]
 HandlerWrapper = t.Callable[[Handler], Handler]
 
 
+def wrapper(chain: t.Iterable[HandlerWrapper], wrapped: Handler) -> Handler:
+    return reduce(
+        lambda x, y: y(x),
+        (m for m in reversed(chain)),
+        wrapped
+    )
+
+
 class Pipeline(PriorityChain[HandlerWrapper]):
 
     def wrap(self, wrapped: Handler) -> Handler:
