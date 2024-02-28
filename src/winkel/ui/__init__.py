@@ -2,11 +2,14 @@ from dataclasses import dataclass, field
 from typing import Set
 from fanstatic import Group, Resource
 from winkel.templates import Templates
+from winkel.service import Installable
 from elementalist.registries import SignatureMapping
 
 
 @dataclass(kw_only=True, slots=True)
-class UI:
+class UI(Installable):
+
+    __provides__ = ['UI']
 
     slots: SignatureMapping = field(default_factory=SignatureMapping)
     layouts: SignatureMapping = field(default_factory=SignatureMapping)
@@ -19,7 +22,7 @@ class UI:
             for resource in self.resources:
                 resource.need()
 
-    def install(self, services, hooks):
+    def install(self, services):
         services.register(UI, instance=self)
 
     def __or__(self, other: 'UI'):

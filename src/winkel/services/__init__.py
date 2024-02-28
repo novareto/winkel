@@ -1,6 +1,6 @@
 from .transaction import Transactional
 from .session import Session, HTTPSession
-from .auth import NoAnonymous
+from winkel.policies import NoAnonymous
 from .flash import Flash
 
 

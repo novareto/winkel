@@ -1,4 +1,4 @@
-from winkel.ui.rendering import html_endpoint, renderer
+from winkel.ui.rendering import html_endpoint, json_endpoint, renderer
 from winkel.components.router import RouteStore
 from winkel.auth import User
 from winkel.app import Application
@@ -23,3 +23,9 @@ def index(scope):
 @renderer
 def bare(scope):
     return "This is my bare view"
+
+
+@routes.register('/test/json')
+@json_endpoint
+def json(scope):
+    return {"key": "value"}

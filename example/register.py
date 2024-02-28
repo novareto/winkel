@@ -3,8 +3,10 @@ import deform
 from horseman.parsers import Data
 from models import Person
 from winkel.response import Response
+from winkel.scope import Scope
 from winkel.components.router import RouteStore
 from winkel.components.view import APIView
+from winkel.meta import URLTools
 from winkel.services.flash import SessionMessages
 from winkel.ui.rendering import html_endpoint, renderer
 from sqlalchemy.sql import exists
@@ -15,7 +17,7 @@ routes = RouteStore()
 
 
 def UniqueEmail(node, value):
-    scope = node.bindings['scope']
+    scope: Scope = node.bindings['scope']
     sqlsession = scope.get(Session)
     if sqlsession.query(exists().where(Person.email == value)).scalar():
         raise colander.Invalid(node, "Email already in use.")
@@ -89,6 +91,7 @@ class Register(APIView):
         sqlsession = scope.get(Session)
         sqlsession.add(Person(**appstruct))
 
+        url = scope.get(URLTools)
         flash = scope.get(SessionMessages)
         flash.add('Account created.', type="info")
-        return Response.redirect(scope.request.application_uri)
+        return Response.redirect(url.application_uri)

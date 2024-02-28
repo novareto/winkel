@@ -6,6 +6,7 @@ from winkel.response import Response
 from winkel.auth import User
 from winkel.components.view import APIView
 from winkel.components.router import RouteStore
+from winkel.meta import URLTools
 from winkel.services.flash import SessionMessages
 from winkel.ui.rendering import html_endpoint, renderer
 from winkel.components import Params
@@ -62,7 +63,8 @@ class CreateFolder(APIView):
 
         flash = scope.get(SessionMessages)
         flash.add('Folder created.', type="info")
-        return Response.redirect(scope.request.application_uri)
+        url = scope.get(URLTools)
+        return Response.redirect(url.application_uri)
 
 
 @routes.register('/folders/{folder_id}', name="folder_view")

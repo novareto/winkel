@@ -2,13 +2,14 @@ import typing as t
 from functools import cached_property
 from horseman.exceptions import HTTPError
 from pathlib import PurePosixPath
-from pydantic import computed_field
 from winkel.auth import anonymous, User
-from winkel.service import Service, handlers
+from winkel.service import Configuration, computed_field
 from winkel.response import Response
+from winkel.meta import URLTools
+from winkel.scope import Scope
 
 
-class NoAnonymous(Service):
+class NoAnonymous(Configuration):
     allowed_urls: t.Set[str] = set()
     login_url: str | None = None
 
@@ -20,10 +21,10 @@ class NoAnonymous(Service):
             allowed.add(PurePosixPath(self.login_url))
         return frozenset(allowed)
 
-    @handlers.before_route
-    def check_access(self, app, scope) -> Response | None:
+    def check_access(self, app, scope: Scope) -> Response | None:
         # we skip unnecessary checks if it's not protected.
-        path = PurePosixPath(scope.request.path)
+        url = scope.get(URLTools)
+        path = PurePosixPath(url.path)
         for bypass in self.unprotected:
             if path.is_relative_to(bypass):
                 return None
@@ -32,5 +33,4 @@ class NoAnonymous(Service):
         if user is anonymous:
             if self.login_url is None:
                 raise HTTPError(403)
-            return Response.redirect(
-                scope.request.script_name + self.login_url)
+            return Response.redirect(url.script_name + self.login_url)

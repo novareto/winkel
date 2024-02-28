@@ -3,7 +3,7 @@ from typing import Callable, Any
 from inspect import isclass
 from chameleon.codegen import template
 from chameleon.astutil import Symbol
-from winkel.request import Scope
+from winkel.scope import Scope
 from winkel.ui import UI
 from winkel.components import MatchedRoute
 

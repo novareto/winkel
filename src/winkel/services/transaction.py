@@ -1,8 +1,12 @@
+import logging
 from typing import Callable
 from contextlib import contextmanager
 from transaction import TransactionManager
 from winkel.response import Response
 from winkel.service import Service, factories
+
+
+logger = logging.getLogger(__name__)
 
 
 class Transactional(Service):

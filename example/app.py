@@ -4,44 +4,49 @@ from fanstatic import Fanstatic
 from js.jquery import jquery
 from winkel.auth import SessionAuthenticator
 from winkel.app import Application
-from winkel.response import Response
 from winkel.ui import UI
 from winkel.ui.slot import SlotExpr
 from winkel.templates import Templates, EXPRESSION_TYPES
-from winkel.services import Transactional, HTTPSession, NoAnonymous, Flash
-import register, login, views, actions, db, ui, folder, document
-
+from winkel.policies import NoAnonymous
+from winkel.services import Transactional, Session, Flash
+import register, login, views, actions, db, ui, folder, document, request
+import logging.config
 
 app = Application()
-
-
-templates = Templates('./templates')
 EXPRESSION_TYPES['slot'] = SlotExpr
-
-ui = UI(
-    slots=ui.slots,
-    layouts=ui.layouts,
-    templates=templates,
-    resources={jquery}
-)
-
 
 app.services.register(actions.Actions, instance=actions.actions)
 app.router |= (
-    register.routes | login.routes | views.routes |
-    folder.routes | document.routes
+    register.routes | login.routes | views.routes | folder.routes | document.routes
 )
+
 
 @app.router.register('/test/error')
 def test2(scope):
     raise NotImplementedError("Damn")
 
 
+app.register_handler('scope.init')(
+    NoAnonymous(
+        login_url='/login',
+        allowed_urls={'/register', '/test'}
+    ).check_access
+)
+
+
 app.use(
+    request.Request(),
     Transactional(),
-    db.SQLDatabase(url="sqlite:///database.db"),
-    ui,
-    HTTPSession(
+    db.SQLDatabase(
+        url="sqlite:///database.db"
+    ),
+    UI(
+        slots=ui.slots,
+        layouts=ui.layouts,
+        templates=Templates('./templates'),
+        resources={jquery}
+    ),
+    Session(
         store=http_session_file.FileStore(
             pathlib.Path('./sessions'), 300
         ),
@@ -55,16 +60,43 @@ app.use(
         sources=[db.DBSource()],
         user_key="user"
     ),
-    NoAnonymous(
-        login_url='/login',
-        allowed_urls={'/register', '/test'}
-    ),
     Flash()
 )
 
+# Run once at startup:
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        },
+    },
+    'handlers': {
+        'default': {
+            'level': 'DEBUG',
+            'formatter': 'standard',
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stdout',  # Default is stderr
+        },
+    },
+    'loggers': {
+        '': {  # root logger
+            'handlers': ['default'],
+            'level': 'DEBUG',
+            'propagate': False
+        },
+        'winkel': {
+            'handlers': ['default'],
+            'level': 'DEBUG',
+            'propagate': True
+        }
+    }
+})
+
+
 
 wsgi_app = Fanstatic(app)
-
 
 if __name__ == "__main__":
     import bjoern

@@ -1,17 +1,22 @@
 import itsdangerous
+import logging
 from contextlib import contextmanager
 from functools import cached_property
 from horseman.datastructures import Cookies
 from http_session.cookie import SameSite, HashAlgorithm, SignedCookieManager
 from http_session.meta import Store
-from http_session.session import Session
-from pydantic import computed_field
 from transaction import TransactionManager
 from winkel.response import Response
-from winkel.service import Service, factories
+from winkel.request import URLUtils
+from winkel.scope import Scope
+from winkel.service import Service, factories, computed_field
+from winkel.meta import HTTPSession
 
 
-class HTTPSession(Service):
+logger = logging.getLogger(__name__)
+
+
+class Session(Service):
     store: Store
     secret: str
     samesite: SameSite = SameSite.lax
@@ -37,11 +42,11 @@ class HTTPSession(Service):
         )
 
     @factories.scoped
-    def http_session_factory(self, scope) -> Session:
+    def http_session_factory(self, scope: Scope) -> HTTPSession:
         return scope.stack.enter_context(self.http_session(scope))
 
     @contextmanager
-    def http_session(self, scope):
+    def http_session(self, scope: Scope):
         new = True
         cookies = scope.get(Cookies)
         if (sig := cookies.get(self.manager.cookie_name)):
@@ -65,8 +70,9 @@ class HTTPSession(Service):
 
         try:
             yield session
-        except:
-            print('An error occured, we do not touch the session')
+        except Exception:
+            # Maybe log.
+            raise
         else:
             response = scope.get(Response)
             if not session.modified and (
@@ -85,11 +91,11 @@ class HTTPSession(Service):
             elif session.new:
                 return
 
-            domain = self.domain or \
-                scope.request['HTTP_HOST'].split(':', 1)[0]
+            url = scope.get(URLUtils)
+            domain = self.domain or url.domain
             cookie = self.manager.cookie(
                 session.sid,
-                scope.request.script_name or '/',
+                url.script_name or '/',
                 domain,
                 secure=self.secure,
                 samesite=self.samesite,

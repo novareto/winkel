@@ -1,12 +1,13 @@
 from winkel.auth import Source, User
 from models import Person
-from winkel.request import Scope
+from winkel.scope import Scope
+from functools import cached_property
 from winkel.response import Response
 from sqlmodel import Session
 from sqlmodel import SQLModel, create_engine
 from sqlalchemy import select
 from sqlalchemy.engine.base import Engine
-from winkel.service import Service, factories
+from winkel.service import Service, factories, computed_field
 from transaction import TransactionManager
 from contextlib import contextmanager
 
@@ -18,22 +19,27 @@ class DBSource(Source):
         password = credentials.get('password')
         sqlsession = scope.get(Session)
         p = sqlsession.exec(
-            select(Person).where(Person.email == username)
+            select(Person).where(
+                Person.email == username,
+                Person.password == password
+            )
         ).scalar_one_or_none()
-        if p is not None and p.password == password:
-            return p
+        return p
 
     def fetch(self, uid, scope) -> User | None:
         sqlsession = scope.get(Session)
-        p = sqlsession.get(Person, uid)
-        return p
+        return sqlsession.get(Person, uid)
 
 
 class SQLDatabase(Service):
+
+    __provides__ = [Session]
+
     url: str
 
-    @factories.singleton
-    def engine_factory(self, scope) -> Engine:
+    @computed_field
+    @cached_property
+    def engine(self) -> Engine:
         engine = create_engine(self.url, echo=True)
         SQLModel.metadata.create_all(engine)
         return engine
@@ -44,8 +50,7 @@ class SQLDatabase(Service):
 
     @contextmanager
     def sqlsession(self, scope):
-        engine = scope.get(Engine)
-        with Session(engine) as session:
+        with Session(self.engine) as session:
             try:
                 yield session
             except Exception:

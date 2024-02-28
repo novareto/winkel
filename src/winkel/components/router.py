@@ -8,7 +8,7 @@ from horseman.exceptions import HTTPError
 from elementalist.element import Element
 from elementalist.collections import ElementMapping
 from winkel.components.utils import get_routables
-from winkel.request import Scope
+from winkel.scope import Scope
 
 
 class Params(frozendict):

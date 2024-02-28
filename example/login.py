@@ -5,6 +5,7 @@ from winkel.response import Response
 from winkel.components.view import APIView
 from winkel.components.router import RouteStore
 from winkel.auth import Authenticator
+from winkel.meta import URLTools
 from winkel.services.flash import SessionMessages
 from winkel.ui.rendering import html_endpoint, renderer
 
@@ -65,7 +66,8 @@ class Login(APIView):
         if user is not None:
             authenticator.remember(scope, user)
             flash.add('Logged in.', type="success")
-            return Response.redirect(scope.request.application_uri)
+            url = scope.get(URLTools)
+            return Response.redirect(url.application_uri)
 
         # Login failed.
         flash.add('Login failed.', type="danger")
@@ -80,4 +82,5 @@ def logout(scope):
     authenticator.forget(scope)
     flash = scope.get(SessionMessages)
     flash.add('Logged out.', type="warning")
-    return Response.redirect(scope.request.application_uri)
+    url = scope.get(URLTools)
+    return Response.redirect(url.application_uri)

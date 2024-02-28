@@ -1,17 +1,8 @@
 import inspect
 from typing import Type, ClassVar, Iterable
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 from types import MethodType
 from collections import defaultdict
-
-
-class Configuration(BaseModel):
-
-    model_config = ConfigDict(
-        frozen=True,
-        extra='allow',
-        arbitrary_types_allowed=True
-    )
 
 
 def marker(name: str):
@@ -28,17 +19,6 @@ def get_marked_groups(instance):
         if attr and inspect.ismethod(attr) and hasattr(attr, '__marker__'):
             groups[attr.__marker__].append(attr)
     return groups
-
-
-class handlers:
-    before_route = marker('before_route')
-
-    @staticmethod
-    def apply(hooks, groups):
-        for name in ('before_route',):
-            if factories := groups.get(name):
-                for factory in factories:
-                    hooks[name].add(factory)
 
 
 class factories:
@@ -59,12 +39,11 @@ class factories:
                 services.add_singleton_by_factory(factory)
 
 
-class Service(Configuration):
-
-    __dependencies__: ClassVar[Iterable[Type] | None] = None
+class Installable:
+    __dependencies__: ClassVar[Iterable[Type | str] | None] = None
     __provides__: ClassVar[Iterable[Type] | None] = None
 
-    def install(self, services, hooks):
+    def install(self, services):
         if self.__dependencies__:
             for depend in self.__dependencies__:
                 if depend not in services.provider:
@@ -72,5 +51,21 @@ class Service(Configuration):
                         f'Missing dependency service: {depend}')
 
         groups = get_marked_groups(self)
-        handlers.apply(hooks, groups)
         factories.apply(services, groups)
+
+
+class Configuration(BaseModel):
+
+    model_config = ConfigDict(
+        frozen=True,
+        extra='allow',
+        arbitrary_types_allowed=True
+    )
+
+
+class Service(Installable, Configuration):
+    pass
+
+
+
+

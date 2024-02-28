@@ -1,7 +1,7 @@
 import typing as t
-from winkel.request import Request
+from winkel.scope import Scope
 from winkel.service import Service, factories
-from http_session import Session
+from winkel.meta import HTTPSession
 
 
 class Message(t.NamedTuple):
@@ -14,7 +14,7 @@ class Message(t.NamedTuple):
 
 class SessionMessages:
 
-    def __init__(self, session: Session, key: str = "flashmessages"):
+    def __init__(self, session: HTTPSession, key: str = "flashmessages"):
         self.key = key
         self.session = session
 
@@ -35,10 +35,10 @@ class SessionMessages:
 
 class Flash(Service):
     key: str = "flashmessages"
-    __dependencies__ = [Session]
+    __dependencies__ = [HTTPSession]
 
     @factories.scoped
-    def messages_factory(self, request: Request) -> SessionMessages:
-        session = request.get(Session)
+    def messages_factory(self, scope: Scope) -> SessionMessages:
+        session = scope.get(HTTPSession)
         return SessionMessages(session, key=self.key)
 

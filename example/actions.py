@@ -1,7 +1,7 @@
 from typing import Any
 from elementalist.registries import SignatureMapping
 from prejudice.errors import ConstraintError
-from winkel.request import Scope
+from winkel.scope import Scope
 from winkel.auth import User, anonymous
 
 

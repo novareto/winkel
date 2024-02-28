@@ -3,7 +3,8 @@ import functools
 from horseman.response import Response
 from chameleon.zpt.template import PageTemplate
 from winkel.ui import UI
-from winkel.request import Scope, Request
+from winkel.scope import Scope
+from winkel.meta import URLTools
 
 
 def renderer(wrapped=None, *,
@@ -17,12 +18,12 @@ def renderer(wrapped=None, *,
         if isinstance(content, Response):
             return content
 
-        scope = args[0]
+        scope: Scope = args[0]
         ui = scope.get(UI)
         namespace = {
                 'scope': scope,
-                'request': scope.request,
                 'ui': ui,
+                'urltools': scope.get(URLTools),
                 'macros': ui.macros,
                 'view': instance or wrapped,
                 'context': object()
