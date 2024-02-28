@@ -3,7 +3,7 @@ from rodi import Container
 from dataclasses import dataclass, field
 from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
-from winkel.components import Router, MatchedRoute, Params
+from winkel.router import Router, MatchedRoute, Params
 from winkel.scope import Scope
 from winkel.response import Response
 from winkel.service import Installable

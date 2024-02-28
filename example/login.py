@@ -1,7 +1,6 @@
 import colander
 import deform
-from winkel.components.view import APIView
-from winkel.components.router import RouteStore
+from winkel.router import APIView, RouteStore
 from winkel.services.flash import SessionMessages
 from winkel import html, renderer, Response, FormData, Authenticator
 

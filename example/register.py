@@ -2,12 +2,9 @@ import colander
 import deform
 from horseman.parsers import Data
 from models import Person
-from winkel.response import Response
-from winkel.scope import Scope
-from winkel.components.router import RouteStore
-from winkel.components.view import APIView
+from winkel.router import APIView, RouteStore
 from winkel.services.flash import SessionMessages
-from winkel.ui.rendering import html, renderer
+from winkel import Scope, Response, html, renderer
 from sqlalchemy.sql import exists
 from sqlmodel import Session
 

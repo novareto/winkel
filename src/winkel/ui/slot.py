@@ -5,7 +5,7 @@ from chameleon.codegen import template
 from chameleon.astutil import Symbol
 from winkel.scope import Scope
 from winkel.ui import UI
-from winkel.components import MatchedRoute
+from winkel.router import MatchedRoute
 
 
 Slot = Callable[[Scope, str, Any], str]

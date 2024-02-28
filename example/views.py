@@ -1,4 +1,4 @@
-from winkel.components.router import RouteStore
+from winkel.router import RouteStore
 from winkel import Query, Application, Response, User, html, json, renderer
 
 
