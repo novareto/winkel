@@ -10,7 +10,9 @@ from winkel.policies import NoAnonymous
 from winkel.services import Transactional, Session, Flash
 import register, login, views, actions, db, ui, folder, document, request
 import logging.config
-
+import vernacular
+from vernacular import translations, Translations
+from winkel.services.translation import TranslationService
 
 app = Application()
 EXPRESSION_TYPES['slot'] = SlotExpr
@@ -19,6 +21,11 @@ app.services.register(actions.Actions, instance=actions.actions)
 app.router |= (
     register.routes | login.routes | views.routes | folder.routes | document.routes
 )
+
+vernacular.COMPILE = True
+i18Catalog = Translations()
+for translation in translations(pathlib.Path('./translations')):
+    i18Catalog.add(translation)
 
 
 @app.router.register('/test/error')
@@ -39,6 +46,11 @@ app.use(
     Transactional(),
     db.SQLDatabase(
         url="sqlite:///database.db"
+    ),
+    TranslationService(
+        translations=i18Catalog,
+        default_domain="example",
+        accepted_languages=["fr", "en", "de"]
     ),
     UI(
         slots=ui.slots,

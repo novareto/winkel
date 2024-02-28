@@ -4,7 +4,7 @@ from chameleon.zpt.template import PageTemplate
 from winkel.response import Response
 from winkel.scope import Scope
 from winkel.ui import UI
-
+from winkel.services.translation import Translator, Locale
 
 def renderer(wrapped=None, *,
              template: PageTemplate | str | None = None,
@@ -24,7 +24,7 @@ def renderer(wrapped=None, *,
                 'ui': ui,
                 'macros': ui.macros,
                 'view': instance or wrapped,
-                'context': object()
+                'context': object(),
             }
 
         if template is not None:
@@ -37,7 +37,13 @@ def renderer(wrapped=None, *,
                 tpl = template
 
             namespace |= content
-            rendered = tpl.render(**namespace)
+            translator = scope.get(Translator)
+            locale = scope.get(Locale)
+            rendered = tpl.render(
+                **namespace,
+                translate=translator.translate,
+                target_language=locale
+            )
 
         elif isinstance(content, str):
             rendered = content

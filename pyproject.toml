@@ -24,6 +24,8 @@ dependencies = [
   "http_session",
   "transaction",
   "elementalist",
+  "vernacular",
+  "content-negotiation"
 ]
 
 [tool.setuptools.packages.find]

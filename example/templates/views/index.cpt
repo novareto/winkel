@@ -1,5 +1,5 @@
-<article>
-  <h2>User overview</h2>
+<article i18n:domain="example">
+  <h2 i18n:translate="user_title">User overview</h2>
   <div>
     <a href="${url_for('folder_create')}">
       <i class="bi-folder-plus"></i>
