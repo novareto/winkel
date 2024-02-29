@@ -2,7 +2,7 @@ import http_session_file
 import pathlib
 from fanstatic import Fanstatic
 from js.jquery import jquery
-from winkel import Application, Response, UI
+from winkel import RoutingApplication, UI
 from winkel.auth import SessionAuthenticator
 from winkel.ui.slot import SlotExpr
 from winkel.templates import Templates, EXPRESSION_TYPES
@@ -15,17 +15,17 @@ from vernacular import translations, Translations
 from winkel.services.translation import TranslationService
 
 
-app = Application()
+app = RoutingApplication()
 EXPRESSION_TYPES['slot'] = SlotExpr
 
 app.services.register(actions.Actions, instance=actions.actions)
 app.router |= (
-    register.routes | login.routes | views.routes | folder.routes | document.routes
+        register.routes | login.routes | views.routes | folder.routes | document.routes
 )
 
 vernacular.COMPILE = True
 i18Catalog = Translations()
-for translation in translations(pathlib.Path('./translations')):
+for translation in translations(pathlib.Path('translations')):
     i18Catalog.add(translation)
 
 
@@ -50,18 +50,18 @@ app.use(
     ),
     TranslationService(
         translations=i18Catalog,
-        default_domain="example",
+        default_domain="routing",
         accepted_languages=["fr", "en", "de"]
     ),
     UI(
         slots=ui.slots,
         layouts=ui.layouts,
-        templates=Templates('./templates'),
+        templates=Templates('templates'),
         resources={jquery}
     ),
     Session(
         store=http_session_file.FileStore(
-            pathlib.Path('./sessions'), 300
+            pathlib.Path('sessions'), 300
         ),
         secret="secret",
         salt="salt",

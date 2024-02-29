@@ -11,6 +11,7 @@ from winkel.datastructures import PriorityChain
 from winkel.meta import Environ, ExceptionInfo
 from collections import defaultdict
 from functools import partial
+from buckaroo import Registry as Trail
 
 
 logger = logging.getLogger(__name__)
@@ -23,13 +24,34 @@ class Mounting(Mapping):
 
 
 @dataclass(kw_only=True, slots=True)
-class Application(RootNode):
+class Eventful:
+    events: dict = field(default_factory=partial(defaultdict, PriorityChain))
+
+    def register_handler(self, name: str, order: int = 0):
+        def handler_registration(handler):
+            self.events[name].add(handler, order)
+        return handler_registration
+
+    def trigger(self, name: str, *args, **kwargs):
+        if name in self.events:
+            for order, handler in self.events[name]:
+                response = handler(*args, **kwargs)
+                if response is not None:
+                    logger.debug(f'{name}: handler {handler!r} responded. Breaking early.')
+                    return response
+
+    def notify(self, name: str, *args, **kwargs):
+        if name in self.events:
+            for order, hook in self.events[name]:
+                hook(self, *args, **kwargs)
+
+
+@dataclass(kw_only=True, slots=True)
+class Application(RootNode, Eventful):
 
     name: str = ''
     services: Container = field(default_factory=Container)
-    router: Router = field(default_factory=Router)
     mounts: Mounting = field(default_factory=Mounting)
-    hooks: dict = field(default_factory=partial(defaultdict, PriorityChain))
 
     def __post_init__(self):
         self.services.add_instance(self, Application)
@@ -43,36 +65,8 @@ class Application(RootNode):
         logging.critical(err, exc_info=True)
         return Response(500, str(err))
 
-    def register_handler(self, name: str, order: int = 0):
-        def handler_registration(handler):
-            self.hooks[name].add(handler, order)
-        return handler_registration
-
-    def trigger(self, name: str, *args, **kwargs):
-        if name in self.hooks:
-            for order, hook in self.hooks[name]:
-                response = hook(*args, **kwargs)
-                if response is not None:
-                    logger.debug(f'{name}: handler {hook!r} responded. Breaking early.')
-                    return response
-
-    def notify(self, name: str, *args, **kwargs):
-        if name in self.hooks:
-            for order, hook in self.hooks[name]:
-                hook(self, *args, **kwargs)
-
     def endpoint(self, scope: Scope) -> Response:
-        route: MatchedRoute | None = self.router.match(
-            scope.environ.path,
-            scope.environ.method
-        )
-        if route is None:
-            raise HTTPError(404)
-
-        scope.register(MatchedRoute, route)
-        scope.register(Params, route.params)
-        self.notify('route.found', scope, route)
-        return route(scope)
+        raise NotImplementedError('Implement your own.')
 
     def resolve(self, path: str, environ: Environ) -> Response:
         if self.mounts:
@@ -93,3 +87,39 @@ class Application(RootNode):
                 scope.register(Response, response)
                 self.notify('scope.response', scope, response)
                 return response
+
+
+@dataclass(kw_only=True, slots=True)
+class RoutingApplication(Application):
+    router: Router = field(default_factory=Router)
+
+    def endpoint(self, scope: Scope) -> Response:
+        route: MatchedRoute | None = self.router.match(
+            scope.environ.path,
+            scope.environ.method
+        )
+        if route is None:
+            raise HTTPError(404)
+
+        scope.register(MatchedRoute, route)
+        scope.register(Params, route.params)
+        self.notify('route.found', scope, route)
+        return route(scope)
+
+
+@dataclass(kw_only=True, slots=True)
+class TraversingApplication(Application):
+    trail: Trail = field(default_factory=Trail)
+
+    def endpoint(self, scope: Scope) -> Response:
+        route: MatchedRoute | None = self.router.match(
+            scope.environ.path,
+            scope.environ.method
+        )
+        if route is None:
+            raise HTTPError(404)
+
+        scope.register(MatchedRoute, route)
+        scope.register(Params, route.params)
+        self.notify('route.found', scope, route)
+        return route(scope)

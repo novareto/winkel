@@ -25,7 +25,8 @@ dependencies = [
   "transaction",
   "elementalist",
   "vernacular",
-  "content-negotiation"
+  "content-negotiation",
+  "buckaroo"
 ]
 
 [tool.setuptools.packages.find]
