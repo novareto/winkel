@@ -25,7 +25,7 @@ def folder_factory(parent: User, scope: Scope, *, name: str) -> Folder:
 
 
 @app.trail.register(Folder, '/docs/{id}')
-def folder_factory(parent: User, scope: Scope, *, id: str) -> Document:
+def document_factory(parent: User, scope: Scope, *, id: str) -> Document:
     params = scope.get(Params)
     params['document_id'] = id
     return Document(parent, id)
