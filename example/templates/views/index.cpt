@@ -1,4 +1,0 @@
-<div>
-  <h2>This is a view</h2>
-  <p tal:content="message" />
-</div>

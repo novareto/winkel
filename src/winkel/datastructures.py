@@ -1,75 +1,38 @@
-from frozendict import frozendict
-from typing import (
-    cast, Optional, Union, Any, Mapping, List, Iterable, Tuple, Dict)
+import typing as t
+import bisect
 
 
-Pairs = Iterable[Tuple[str, Any]]
+C = t.TypeVar('C')
 
 
-class MultiDict(Dict[str, List[Any]]):
+class PriorityChain(t.Generic[C]):
 
-    def __init__(self, data: Optional[Union['MultiDict', Dict, Pairs]] = None):
-        if data is not None:
-            if isinstance(data, MultiDict):
-                super().__init__(data)
-            elif isinstance(data, Mapping):
-                for key, value in data.items():
-                    self.add(key, value)
-            else:
-                value = cast(Pairs, data)
-                for key, value in value:
-                    self.add(key, value)
+    __slots__ = ('_chain',)
 
-    def get(self, name: str, default: Optional[Any] = None) -> Any:
-        """Return the first value of the found list.
-        """
-        return super().get(name, [default])[0]
+    _chain: t.List[t.Tuple[int, C]]
 
-    def getlist(self, name: str, default: Optional[Any] = ...) -> List[Any]:
-        """Return the value list
-        """
-        if default is ...:
-            default = []
-        return super().get(name, default)
+    def __init__(self, *components: C):
+        self._chain = list(enumerate(components))
 
-    def pairs(self) -> Pairs:
-        for key, values in self.items():
-            for value in values:
-                yield key, value
+    def __iter__(self):
+        return iter(self._chain)
 
-    def add(self, name: str, value: Any) -> None:
-        if name in self:
-            self[name].append(value)
+    def add(self, component: C, order: int = 0):
+        insert = (order, component)
+        if not self._chain:
+            self._chain = [insert]
+        elif insert in self._chain:
+            raise KeyError(
+                'Component {component!r} already exists at #{order}.')
         else:
-            self[name] = [value]
+            bisect.insort(self._chain, insert)
 
-    def to_dict(self, frozen=True):
-        impl = frozendict if frozen else dict
-        return impl(
-            {k: (v[0] if len(v) == 1 else v) for k, v in self.items()}
-        )
+    def remove(self, component: C, order: int):
+        insert = (order, component)
+        if insert not in self._chain:
+            raise KeyError(
+                'Component {component!r} doest not exist at #{order}.')
+        self._chain.remove(insert)
 
-
-class TypeCastingDict(MultiDict):
-    TRUE_STRINGS = {'t', 'true', 'yes', '1', 'on'}
-    FALSE_STRINGS = {'f', 'false', 'no', '0', 'off'}
-    NONE_STRINGS = {'n', 'none', 'null'}
-
-    def bool(self, key: str, default=None):
-        value = self.get(key, default)
-        if value in (True, False, None):
-            return value
-        value = value.lower()
-        if value in self.TRUE_STRINGS:
-            return True
-        elif value in self.FALSE_STRINGS:
-            return False
-        elif value in self.NONE_STRINGS:
-            return None
-        raise ValueError(f"Can't cast {value!r} to boolean.")
-
-    def int(self, key: str, default=...):
-        return int(self.get(key, default))
-
-    def float(self, key: str, default=...):
-        return float(self.get(key, default))
+    def clear(self):
+        self._chain.clear()

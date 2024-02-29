@@ -1,26 +1,39 @@
 import ast
-import horseman.meta
 from typing import Callable, Any
+from inspect import isclass
 from chameleon.codegen import template
 from chameleon.astutil import Symbol
+from winkel.scope import Scope
+from winkel.ui import UI
+from winkel.router import MatchedRoute
 
 
-Slot = Callable[[horseman.meta.Overhead, str, Any], str]
+Slot = Callable[[Scope, str, Any], str]
 
 
 def query_slot(econtext, name):
     """Compute the result of a slot expression
     """
-    ui = econtext.get('ui', None)
-    if ui is None:
-        return None
-    request = econtext.get('request')
-    view = econtext.get('view', object())
+    scope = econtext.get('scope')  # mandatory.
     context = econtext.get('context', object())
+    view = econtext.get('view', object())
+    ui = econtext.get('ui', scope.get(UI))
+
     try:
-        manager = ui.slots.get(request, view, context, name=name)()
-        slots = ui.slots.match_all(request, manager, view, context)
-        return manager.render(request, view, context, slots.values())
+        manager = ui.slots.lookup(scope, view, context, name=name)
+        if manager.evaluate(view, context, scope=scope):
+            return None
+
+        if isclass(manager.value):
+            manager = manager.value()
+        else:
+            manager = manager.value
+
+        slots = ui.slots.match_grouped(scope, manager, view, context)
+        return manager(
+            scope, view, context, slots=slots.values()
+        )
+
     except LookupError:
         # No slot found. We don't render anything.
         return None

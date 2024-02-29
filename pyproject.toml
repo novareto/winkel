@@ -11,15 +11,22 @@ authors = [
 requires-python = ">=3.10"
 classifiers = ["License :: OSI Approved :: MIT License"]
 dependencies = [
-  "horseman",
   "autoroutes",
   "chameleon",
-  "plum_dispatch",
-  "prejudice",
-  "frozendict",
-  "orjson",
-  "wrapt",
   "fanstatic",
+  "frozendict",
+  "horseman",
+  "orjson",
+  "prejudice",
+  "rodi",
+  "wrapt",
+  "itsdangerous",
+  "http_session",
+  "transaction",
+  "elementalist",
+  "vernacular",
+  "content-negotiation",
+  "buckaroo"
 ]
 
 [tool.setuptools.packages.find]

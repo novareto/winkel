@@ -1,19 +1,18 @@
 from dataclasses import dataclass, field
-from typing import Literal, Set
-from plum import Signature
+from typing import Set
 from fanstatic import Group, Resource
-from horseman.meta import Overhead
-from chameleon.zpt import template
-from winkel.items import ItemResolver
 from winkel.templates import Templates
-from winkel.components.named import Components, NamedComponents
+from winkel.service import Installable
+from elementalist.registries import SignatureMapping
 
 
 @dataclass(kw_only=True, slots=True)
-class UI:
+class UI(Installable):
 
-    slots: Components = field(default_factory=Components)
-    layouts: NamedComponents = field(default_factory=NamedComponents)
+    __provides__ = ['UI']
+
+    slots: SignatureMapping = field(default_factory=SignatureMapping)
+    layouts: SignatureMapping = field(default_factory=SignatureMapping)
     templates: Templates = field(default_factory=Templates)
     macros: Templates = field(default_factory=Templates)
     resources: Set[Group | Resource] = field(default_factory=set)
@@ -22,6 +21,9 @@ class UI:
         if self.resources:
             for resource in self.resources:
                 resource.need()
+
+    def install(self, services):
+        services.register(UI, instance=self)
 
     def __or__(self, other: 'UI'):
         if not isinstance(other, self.__class__):
