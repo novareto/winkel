@@ -121,8 +121,11 @@ class TraversingApplication(Application):
         leaf, view_name = self.trail.resolve(
             self, scope.environ.path, scope, partial=True
         )
-        view = self.views.lookup(
-            scope, leaf, scope.environ.method, name=view_name)
+        try:
+            view = self.views.lookup(
+                scope, leaf, scope.environ.method, name=view_name)
+        except LookupError as err:
+            view = None
         if view is None:
             raise HTTPError(404)
 
