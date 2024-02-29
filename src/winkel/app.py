@@ -11,6 +11,7 @@ from winkel.datastructures import PriorityChain
 from winkel.meta import Environ, ExceptionInfo
 from collections import defaultdict
 from functools import partial
+from elementalist.registries import SignatureMapping
 from buckaroo import Registry as Trail
 
 
@@ -47,7 +48,7 @@ class Eventful:
 
 
 @dataclass(kw_only=True, slots=True)
-class Application(RootNode, Eventful):
+class Application(Eventful, RootNode):
 
     name: str = ''
     services: Container = field(default_factory=Container)
@@ -110,16 +111,19 @@ class RoutingApplication(Application):
 @dataclass(kw_only=True, slots=True)
 class TraversingApplication(Application):
     trail: Trail = field(default_factory=Trail)
+    views: SignatureMapping = field(default_factory=SignatureMapping)
+
+    def __post_init__(self):
+        self.services.add_instance(self, Application)
+        self.services.add_scoped(Params)
 
     def endpoint(self, scope: Scope) -> Response:
-        route: MatchedRoute | None = self.router.match(
-            scope.environ.path,
-            scope.environ.method
+        leaf, view_name = self.trail.resolve(
+            self, scope.environ.path, scope, partial=True
         )
-        if route is None:
+        view = self.views.lookup(
+            scope, leaf, scope.environ.method, name=view_name)
+        if view is None:
             raise HTTPError(404)
 
-        scope.register(MatchedRoute, route)
-        scope.register(Params, route.params)
-        self.notify('route.found', scope, route)
-        return route(scope)
+        return view.secure_call(scope, leaf, scope.environ.method)

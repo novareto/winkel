@@ -2,7 +2,6 @@ import autoroutes
 import typing as t
 import types
 import inspect
-from frozendict import frozendict
 from http import HTTPStatus
 from plum import dispatch
 from prejudice.types import Predicate
@@ -74,7 +73,7 @@ def get_routables(
     yield inst.__call__, methods
 
 
-class Params(frozendict):
+class Params(dict):
     pass
 
 
