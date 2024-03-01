@@ -1,10 +1,8 @@
 import logging
-from typing import Type, Iterator, Any
 from rodi import Container
 from dataclasses import dataclass, field
 from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
-from winkel.router import Router, MatchedRoute, Params
 from winkel.scope import Scope
 from winkel.response import Response
 from winkel.service import Installable
@@ -12,8 +10,6 @@ from winkel.datastructures import PriorityChain
 from winkel.meta import Environ, ExceptionInfo
 from collections import defaultdict
 from functools import partial
-from elementalist.registries import SignatureMapping
-from buckaroo import Registry as Trail, TypeMapping
 
 
 logger = logging.getLogger(__name__)
@@ -49,14 +45,14 @@ class Eventful:
 
 
 @dataclass(kw_only=True, slots=True)
-class Application(Eventful, RootNode):
+class Root(Eventful, RootNode):
 
     name: str = ''
     services: Container = field(default_factory=Container)
     mounts: Mounting = field(default_factory=Mounting)
 
     def __post_init__(self):
-        self.services.add_instance(self, Application)
+        self.services.add_instance(self, Root)
 
     def use(self, *components: Installable):
         for component in components:
@@ -84,74 +80,7 @@ class Application(Eventful, RootNode):
                         response = self.endpoint(scope)
                 except HTTPError as err:
                     response = Response(err.status, err.body)
-                except Exception as err:
-                    raise
+
                 scope.register(Response, response)
                 self.notify('scope.response', scope, response)
                 return response
-
-
-@dataclass(kw_only=True, slots=True)
-class RoutingApplication(Application):
-    router: Router = field(default_factory=Router)
-
-    def endpoint(self, scope: Scope) -> Response:
-        route: MatchedRoute | None = self.router.match(
-            scope.environ.path,
-            scope.environ.method
-        )
-        if route is None:
-            raise HTTPError(404)
-
-        scope.register(MatchedRoute, route)
-        scope.register(Params, route.params)
-        self.notify('route.found', scope, route)
-        return route(scope)
-
-
-class ViewRegistry(dict):
-
-    @staticmethod
-    def lineage(cls: Type):
-        yield from cls.__mro__
-
-    def lookup(self, cls: Type) -> Iterator[Router]:
-        for parent in self.lineage(cls):
-            if parent in self:
-                yield self[parent]
-
-    def register(self, root: Type, *args, **kwargs):
-        router = self.setdefault(root, Router())
-        return router.register(*args, **kwargs)
-
-    def match(self, root: Any, path: str, method: str):
-        for routes in self.lookup(root.__class__):
-            matched: MatchedRoute | None = routes.match(path, method)
-            if matched is not None:
-                return matched
-
-
-@dataclass(kw_only=True, slots=True)
-class TraversingApplication(Application):
-    trail: Trail = field(default_factory=Trail)
-    views: ViewRegistry = field(default_factory=ViewRegistry)
-
-    def __post_init__(self):
-        self.services.add_instance(self, Application)
-        self.services.add_scoped(Params)
-
-    def endpoint(self, scope: Scope) -> Response:
-        leaf, view_path = self.trail.resolve(
-            self, scope.environ.path, scope, partial=True
-        )
-        if not view_path.startswith('/'):
-            view_path = f'/{view_path}'
-        view = self.views.match(leaf, view_path, scope.environ.method)
-        if view is None:
-            raise HTTPError(404)
-
-        params = scope.get(Params)
-        params |= view.params
-
-        scope.register(MatchedRoute, view)
-        return view(scope, leaf)

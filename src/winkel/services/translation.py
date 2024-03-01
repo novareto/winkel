@@ -32,7 +32,7 @@ class TranslationService(Service):
                 # Fallback to default.
                 logger.debug('Could not find a suitable language. Using fallback.')
 
-        logger.debug(f'No language preference: Using fallback.')
+        logger.debug('No language preference: Using fallback.')
         return Locale(self.accepted_languages[0])
 
 
