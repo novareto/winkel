@@ -1,43 +1,26 @@
-import wrapt
-import deform
-from typing import Any
-from sqlmodel import Session
-import jsonschema_colander.types
-from winkel import Root, Scope
+import pathlib
+from fanstatic import Fanstatic
+import http_session_file
+from js.jquery import jquery
 from request import Request
-from models import Company
+from winkel.services import Session, Flash
 from winkel.services.sqldb import SQLDatabase
-from winkel import Response, FormData, html, renderer
-from winkel.routing import APIView, Params
-from winkel.ui import UI, Templates
 from winkel.traversing import Application
+from winkel.ui import UI
+from winkel.ui.slot import SlotExpr
+from winkel.templates import Templates, EXPRESSION_TYPES
+import factories, views, ui
 
 
-company_schema = jsonschema_colander.types.Object.from_json(
-    Company.model_json_schema(), config={
-        "": {
-            "exclude": ("id",)
-        },
-    }
+EXPRESSION_TYPES['slot'] = SlotExpr
+
+
+app = Application(
+    trail=factories.trail,
 )
 
-def company_creation_form(scope):
-    schema = company_schema().bind(scope=scope)
-    process_btn = deform.form.Button(name='process', title="Process")
-    return deform.form.Form(schema, buttons=(process_btn,))
+app.views |= views.routes
 
-
-class Traversed(wrapt.ObjectProxy):
-    __parent__: Any
-    __trail__: str
-
-    def __init__(self, wrapped, *, parent: Any, path: str):
-        super().__init__(wrapped)
-        self.__parent__ = parent
-        self.__trail__ = path
-
-
-app = Application()
 app.use(
     Request(),
     SQLDatabase(
@@ -45,58 +28,22 @@ app.use(
     ),
     UI(
         templates=Templates('templates'),
+        slots=ui.slots,
+        layouts=ui.layouts,
+        resources={jquery}
     ),
+    Session(
+        store=http_session_file.FileStore(
+            pathlib.Path('sessions'), 300
+        ),
+        secret="secret",
+        salt="salt",
+        cookie_name="cookie_name",
+        secure=False,
+        TTL=300
+    ),
+    Flash()
 )
 
 
-@app.trail.register(Application, '/company/{company_id}')
-def company_factory(path: str, parent: Application, scope: Scope, *, company_id: str) -> Company:
-    sqlsession = scope.get(Session)
-    params = scope.get(Params)
-    params['company_id'] = company_id
-    company = sqlsession.get(Company, company_id)
-    return Traversed(company, parent=parent, path=path)
-
-
-@app.views.register(Company, '/{whatever}')
-@html
-def company_index(scope, company):
-    params = scope.get(Params)
-    return f"Company: {company.name} from {params}"
-
-@app.views.register(Application, '/new_company')
-class CreateCompany(APIView):
-
-    @html
-    @renderer(template='form/default', layout_name=None)
-    def GET(self, scope, app):
-        form = company_creation_form(scope)
-        return {
-            "rendered_form": form.render()
-        }
-
-    @html
-    @renderer(template='form/default', layout_name=None)
-    def POST(self, scope, app):
-        data = scope.get(FormData)
-        if ('process', 'process') not in data.form:
-            raise NotImplementedError('No action found.')
-
-        try:
-            form = company_creation_form(scope)
-            appstruct = form.validate(data.form)
-        except deform.exception.ValidationFailure as e:
-            return {
-                "rendered_form": e.render()
-            }
-
-        sqlsession = scope.get(Session)
-        sqlsession.add(
-            Company(
-                **appstruct
-            )
-        )
-        return Response.redirect(scope.environ.application_uri)
-
-
-wsgi_app = app
+wsgi_app = Fanstatic(app)

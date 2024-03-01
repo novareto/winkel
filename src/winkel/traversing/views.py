@@ -13,12 +13,37 @@ class ViewRegistry(dict):
             if parent in self:
                 yield self[parent]
 
-    def register(self, root: Type, *args, **kwargs):
-        router = self.setdefault(root, Router())
+    def register(self, context: Type, *args, **kwargs):
+        router = self.setdefault(context, Router())
         return router.register(*args, **kwargs)
 
-    def match(self, root: Any, path: str, method: str):
-        for routes in self.lookup(root.__class__):
+    def route_for(self, context: Any, name: str, **params):
+        for router in self.lookup(context.__class__):
+            if router.has_route(name):
+                return router.url_for(name, **params)
+        raise LookupError(f'Could not find route {name!r} for {context!r}')
+
+    def match(self, context: Any, path: str, method: str):
+        for routes in self.lookup(context.__class__):
             matched: MatchedRoute | None = routes.match(path, method)
             if matched is not None:
                 return matched
+
+    def __or__(self, other: 'ViewRegistry'):
+        new = ViewRegistry()
+        for cls, router in self.items():
+            new[cls] = router
+        for cls, router in other.items():
+            if cls in new:
+                new[cls] |= router
+            else:
+                new[cls] = router
+        return new
+
+    def __ior__(self, other: 'ViewRegistry'):
+        for cls, router in other.items():
+            if cls in self:
+                self[cls] |= router
+            else:
+                self[cls] = router
+        return self

@@ -15,6 +15,7 @@ class Application(Root):
 
     def __post_init__(self):
         self.services.add_instance(self, Application)
+        self.services.add_instance(self.views, ViewRegistry)
         self.services.add_scoped(Params)
 
     def endpoint(self, scope: Scope) -> Response:

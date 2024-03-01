@@ -6,6 +6,7 @@ from winkel.scope import Scope
 from winkel.ui import UI
 from winkel.services.translation import Translator, Locale
 
+
 def renderer(wrapped=None, *,
              template: PageTemplate | str | None = None,
              layout_name: str | None = ""):
