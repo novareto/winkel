@@ -2,20 +2,22 @@ import http_session_file
 import pathlib
 from fanstatic import Fanstatic
 from js.jquery import jquery
-from winkel import RoutingApplication, UI, sqldb
+from vernacular import translations, Translations
+from winkel import UI
+from winkel.routing import Application
 from winkel.auth import SessionAuthenticator
 from winkel.ui.slot import SlotExpr
 from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.policies import NoAnonymous
 from winkel.services import Transactional, Session, Flash
+from winkel.services.sqldb import SQLDatabase
+from winkel.services.translation import TranslationService
 import register, login, views, actions, ui, folder, document, request, db
 import logging.config
 import vernacular
-from vernacular import translations, Translations
-from winkel.services.translation import TranslationService
 
 
-app = RoutingApplication()
+app = Application()
 EXPRESSION_TYPES['slot'] = SlotExpr
 
 app.services.register(actions.Actions, instance=actions.actions)
@@ -45,7 +47,7 @@ app.register_handler('scope.init')(
 app.use(
     request.Request(),
     Transactional(),
-    sqldb.SQLDatabase(
+    SQLDatabase(
         url="sqlite:///database.db"
     ),
     TranslationService(

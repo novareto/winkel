@@ -1,5 +1,5 @@
-from winkel.router import RouteStore
-from winkel import Query, Application, Response, User, html, json, renderer
+from winkel.routing import RouteStore
+from winkel import Query, Root, Response, User, html, json, renderer
 
 
 routes = RouteStore()
@@ -9,7 +9,7 @@ routes = RouteStore()
 @html
 @renderer(template='views/index')
 def index(scope):
-    application = scope.get(Application)
+    application = scope.get(Root)
     return {
         'user': scope.get(User),
         'url_for': application.router.url_for

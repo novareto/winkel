@@ -1,15 +1,16 @@
 import wrapt
 import deform
 from typing import Any
+from sqlmodel import Session
 import jsonschema_colander.types
-from winkel import Application, TraversingApplication, Scope, sqldb
+from winkel import Root, Scope
 from request import Request
 from models import Company
-from winkel.router import Params
-from sqlmodel import Session
+from winkel.services.sqldb import SQLDatabase
 from winkel import Response, FormData, html, renderer
+from winkel.routing import APIView, Params
 from winkel.ui import UI, Templates
-from winkel.router import APIView
+from winkel.traversing import Application
 
 
 company_schema = jsonschema_colander.types.Object.from_json(
@@ -36,10 +37,10 @@ class Traversed(wrapt.ObjectProxy):
         self.__trail__ = path
 
 
-app = TraversingApplication()
+app = Application()
 app.use(
     Request(),
-    sqldb.SQLDatabase(
+    SQLDatabase(
         url="sqlite:///traversing.db"
     ),
     UI(
