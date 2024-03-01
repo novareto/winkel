@@ -12,7 +12,7 @@ def renderer(wrapped=None, *,
              layout_name: str | None = ""):
 
     @wrapt.decorator
-    def rendering_wrapper(wrapped, instance, args, kwargs) -> str:
+    def rendering_wrapper(wrapped, instance, args, kwargs) -> str | Response:
         content = wrapped(*args, **kwargs)
 
         if isinstance(content, Response):
@@ -49,7 +49,7 @@ def renderer(wrapped=None, *,
 
         elif isinstance(content, str):
             rendered = content
-        elif not isinstance(content, str):
+        else:
             raise TypeError(
                 f'Unable to render type: {type(content)}.')
 
@@ -89,11 +89,7 @@ def html(wrapped, instance, args, kwargs) -> Response:
     ui = scope.get(UI)
     ui.inject_resources()
 
-    return Response(
-        200,
-        body=content,
-        headers={"Content-Type": "text/html; charset=utf-8"}
-    )
+    return Response.html(body=content)
 
 
 @wrapt.decorator
@@ -106,8 +102,4 @@ def json(wrapped, instance, args, kwargs) -> Response:
     if not isinstance(content, (dict, list)):
         raise TypeError(f'Unable to render type: {type(content)}.')
 
-    return Response.to_json(
-        200,
-        body=content,
-        headers={"Content-Type": "application/json"}
-    )
+    return Response.to_json(body=content)

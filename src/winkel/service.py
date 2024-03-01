@@ -34,7 +34,6 @@ class Configuration(BaseModel):
 
     model_config = ConfigDict(
         frozen=True,
-        extra='allow',
         arbitrary_types_allowed=True
     )
 

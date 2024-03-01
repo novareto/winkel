@@ -8,7 +8,7 @@ T = t.TypeVar("T")
 
 
 class Scope(ActivationScope):
-    environ: Environ
+    environ: WSGIEnvironWrapper
 
     def __init__(self,
                  environ: Environ,
