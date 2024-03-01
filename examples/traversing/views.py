@@ -1,13 +1,9 @@
 import deform
-from functools import partial
-from sqlmodel import Session, select
-from horseman.exceptions import HTTPError
+from sqlmodel import Session as SQLSession, select
 from winkel.traversing import Application
-from winkel import FormData, Response
-from winkel.routing import Params, APIView
-from winkel import html, renderer
+from winkel import Response, html, renderer
 from winkel.traversing.views import ViewRegistry
-from models import Company, Course
+from models import Company, Course, Session
 from form import Form, trigger
 from factories import Traversed
 
@@ -15,24 +11,21 @@ from factories import Traversed
 routes = ViewRegistry()
 
 
-def form(schema, scope):
-    schema = schema.bind(scope=scope)
-    process_btn = deform.form.Button(name='process', title="Process")
-    return deform.form.Form(schema, buttons=(process_btn,))
-
-
 def url_for(scope, context):
     def resolve_url(target, name, **params):
         root = scope.get(Application)
-        stub = root.views.route_for(target, name, **params)
-        if target is context:
-            if type(context) is Traversed:
-                return context.__path__ + stub
-            return stub
+        route_stub = root.views.route_for(target, name, **params)
+        if type(context) is Traversed:
+            root_stub = context.__path__
         else:
+            root_stub = ''
+
+        if context.__class__ is not target.__class__:
             trail = root.trail.reverse(target.__class__, context.__class__)
             path = trail.format(**params)
-            return path + stub
+            return root_stub + path + route_stub
+        else:
+            return root_stub + route_stub
     return resolve_url
 
 
@@ -40,7 +33,7 @@ def url_for(scope, context):
 @html
 @renderer(template='views/index')
 def root_index(scope, application):
-    sqlsession = scope.get(Session)
+    sqlsession = scope.get(SQLSession)
     query = select(Company)
     companies = sqlsession.exec(query).all()
     return {
@@ -54,8 +47,6 @@ def root_index(scope, application):
 @html
 @renderer(template='views/company')
 def company_index(scope, company):
-    params = scope.get(Params)
-    views = scope.get(ViewRegistry)
     return {
         'context': company,
         'url_for': url_for(scope, company)
@@ -66,9 +57,16 @@ def company_index(scope, company):
 @html
 @renderer(template='views/course')
 def course_index(scope, course):
-    params = scope.get(Params)
-    return {'context': course}
+    return {
+        'context': course,
+        'url_for': url_for(scope, course)
+    }
 
+@routes.register(Session, '/', name="view")
+@html
+@renderer(template='views/session')
+def session_index(scope, session):
+    return {'context': session}
 
 
 @routes.register(Application, '/create_company', name='create_company')
@@ -81,14 +79,9 @@ class CreateCompany(Form):
 
     @trigger('save', 'Create new company')
     def save(self, scope, data, context):
-        try:
-            form = self.get_form(scope, app)
-            appstruct = form.validate(data.form)
-        except deform.exception.ValidationFailure as e:
-            return {
-                "rendered_form": e.render()
-            }
-        sqlsession = scope.get(Session)
+        form = self.get_form(scope, context)
+        appstruct = form.validate(data)
+        sqlsession = scope.get(SQLSession)
         sqlsession.add(
             Company(
                 **appstruct
@@ -98,25 +91,44 @@ class CreateCompany(Form):
 
 
 @routes.register(Company, '/create_course', name='create_course')
-class CreateCourse(APIView):
+class CreateCourse(Form):
+
+    model = Course
 
     def get_schema(self, scope, context):
-        return Course.get_schema(exclude=("id", "company_id"))
+        return self.model.get_schema(exclude=("id", "company_id"))
 
-    @trigger('save', 'Create new company')
+    @trigger('save', 'Create new course')
     def save(self, scope, data, context):
-        try:
-            form = self.get_form(scope, app)
-            appstruct = form.validate(data.form)
-        except deform.exception.ValidationFailure as e:
-            return {
-                "rendered_form": e.render()
-            }
-        sqlsession = scope.get(Session)
+        form = self.get_form(scope, context)
+        appstruct = form.validate(data)
+        sqlsession = scope.get(SQLSession)
         sqlsession.add(
             Course(
                 **appstruct,
-                company_id=company.id
+                company_id=context.id
             )
         )
-        return Response.redirect(scope.environ.application_uri)
+        return Response.redirect(context.__path__)
+
+
+@routes.register(Course, '/create_session', name='create_session')
+class CreateSession(Form):
+
+    model = Session
+
+    def get_schema(self, scope, context):
+        return self.model.get_schema(exclude=("id", "course_id"))
+
+    @trigger('save', 'Create new session')
+    def save(self, scope, data, context):
+        form = self.get_form(scope, context)
+        appstruct = form.validate(data)
+        sqlsession = scope.get(SQLSession)
+        sqlsession.add(
+            Session(
+                **appstruct,
+                course_id=context.id
+            )
+        )
+        return Response.redirect(context.__path__)

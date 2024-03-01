@@ -1,9 +1,9 @@
 import deform
 import jsonschema_colander.types
 from sqlmodel import Session
-from winkel.routing import APIView, RouteStore, Params
+from winkel.routing import Application, APIView, RouteStore, Params
 from winkel.services.flash import SessionMessages
-from winkel import Root, User, Response, FormData, html, renderer
+from winkel import User, Response, FormData, html, renderer
 from models import Document
 
 
@@ -72,7 +72,7 @@ class CreateDocument(APIView):
 @html
 @renderer(template='views/document')
 def document_view(scope):
-    application = scope.get(Root)
+    application = scope.get(Application)
     sqlsession = scope.get(Session)
     params = scope.get(Params)
     document = sqlsession.get(Document, params['document_id'])

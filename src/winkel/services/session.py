@@ -16,7 +16,7 @@ from winkel.meta import HTTPSession
 logger = logging.getLogger(__name__)
 
 
-class Session(Service):
+class HTTPSessions(Service):
     store: Store
     secret: str
     samesite: SameSite = SameSite.lax

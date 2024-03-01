@@ -1,21 +1,19 @@
 import http_session_file
 import pathlib
+import vernacular
+import logging.config
 from fanstatic import Fanstatic
 from js.jquery import jquery
-from vernacular import translations, Translations
 from winkel import UI
 from winkel.routing import Application
-from winkel.auth import SessionAuthenticator
 from winkel.ui.slot import SlotExpr
 from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.policies import NoAnonymous
-from winkel.services import Transactional, Session, Flash
-from winkel.services.sqldb import SQLDatabase
-from winkel.services.translation import TranslationService
 import register, login, views, actions, ui, folder, document, request, db
-import logging.config
-import vernacular
-
+from winkel.services import (
+    Transactional, HTTPSessions, Flash, SessionAuthenticator,
+    SQLDatabase, TranslationService
+)
 
 app = Application()
 EXPRESSION_TYPES['slot'] = SlotExpr
@@ -26,14 +24,9 @@ app.router |= (
 )
 
 vernacular.COMPILE = True
-i18Catalog = Translations()
-for translation in translations(pathlib.Path('translations')):
+i18Catalog = vernacular.Translations()
+for translation in vernacular.translations(pathlib.Path('translations')):
     i18Catalog.add(translation)
-
-
-@app.router.register('/test/error')
-def test2(scope):
-    raise NotImplementedError("Damn")
 
 
 app.register_handler('scope.init')(
@@ -61,15 +54,15 @@ app.use(
         templates=Templates('templates'),
         resources={jquery}
     ),
-    Session(
+    HTTPSessions(
         store=http_session_file.FileStore(
-            pathlib.Path('sessions'), 300
+            pathlib.Path('sessions'), 3000
         ),
         secret="secret",
         salt="salt",
         cookie_name="cookie_name",
         secure=False,
-        TTL=300
+        TTL=3000
     ),
     SessionAuthenticator(
         sources=[db.DBSource()],

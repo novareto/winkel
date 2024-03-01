@@ -1,6 +1,6 @@
 from winkel.routing import RouteStore
-from winkel import Query, Root, Response, User, html, json, renderer
-
+from winkel import Query, Response, User, html, json, renderer
+from winkel.routing import Application
 
 routes = RouteStore()
 
@@ -9,7 +9,7 @@ routes = RouteStore()
 @html
 @renderer(template='views/index')
 def index(scope):
-    application = scope.get(Root)
+    application = scope.get(Application)
     return {
         'user': scope.get(User),
         'url_for': application.router.url_for
@@ -43,3 +43,8 @@ def some_pipe(handler):
 @renderer
 def filtered(scope):
     return "This is my filtered view"
+
+
+@routes.register('/test/error')
+def test2(scope):
+    raise NotImplementedError("Damn")

@@ -1,12 +1,11 @@
-import colander
 import deform
 from typing import Type
 from sqlmodel import SQLModel
 from func_annotator import annotation
 from horseman.exceptions import HTTPError
 from winkel import html, renderer
-from winkel.routing import Params, APIView
-from winkel import FormData, Response
+from winkel.routing import APIView
+from winkel import FormData
 
 
 class trigger(annotation):
@@ -52,6 +51,7 @@ class Form(APIView):
     def GET(self, scope, context):
         form = self.get_form(scope, context)
         return {
+            "context": context,
             "rendered_form": form.render()
         }
 
@@ -60,6 +60,12 @@ class Form(APIView):
     def POST(self, scope, context):
         data = scope.get(FormData)
         for entry in data.form:
-            if trigger := self.triggers.get(entry):
-                return trigger(scope, data.form, context)
+            if action := self.triggers.get(entry):
+                try:
+                    return action(scope, data.form, context)
+                except deform.exception.ValidationFailure as e:
+                    return {
+                        "context": context,
+                        "rendered_form": e.render()
+                    }
         raise HTTPError(400)
