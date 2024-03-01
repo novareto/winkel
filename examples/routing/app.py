@@ -2,13 +2,13 @@ import http_session_file
 import pathlib
 from fanstatic import Fanstatic
 from js.jquery import jquery
-from winkel import RoutingApplication, UI
+from winkel import RoutingApplication, UI, sqldb
 from winkel.auth import SessionAuthenticator
 from winkel.ui.slot import SlotExpr
 from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.policies import NoAnonymous
 from winkel.services import Transactional, Session, Flash
-import register, login, views, actions, db, ui, folder, document, request
+import register, login, views, actions, ui, folder, document, request, db
 import logging.config
 import vernacular
 from vernacular import translations, Translations
@@ -45,7 +45,7 @@ app.register_handler('scope.init')(
 app.use(
     request.Request(),
     Transactional(),
-    db.SQLDatabase(
+    sqldb.SQLDatabase(
         url="sqlite:///database.db"
     ),
     TranslationService(

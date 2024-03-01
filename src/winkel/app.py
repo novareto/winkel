@@ -1,4 +1,5 @@
 import logging
+from typing import Type, Iterator, Any
 from rodi import Container
 from dataclasses import dataclass, field
 from horseman.exceptions import HTTPError
@@ -12,7 +13,7 @@ from winkel.meta import Environ, ExceptionInfo
 from collections import defaultdict
 from functools import partial
 from elementalist.registries import SignatureMapping
-from buckaroo import Registry as Trail
+from buckaroo import Registry as Trail, TypeMapping
 
 
 logger = logging.getLogger(__name__)
@@ -108,25 +109,49 @@ class RoutingApplication(Application):
         return route(scope)
 
 
+class ViewRegistry(dict):
+
+    @staticmethod
+    def lineage(cls: Type):
+        yield from cls.__mro__
+
+    def lookup(self, cls: Type) -> Iterator[Router]:
+        for parent in self.lineage(cls):
+            if parent in self:
+                yield self[parent]
+
+    def register(self, root: Type, *args, **kwargs):
+        router = self.setdefault(root, Router())
+        return router.register(*args, **kwargs)
+
+    def match(self, root: Any, path: str, method: str):
+        for routes in self.lookup(root.__class__):
+            matched: MatchedRoute | None = routes.match(path, method)
+            if matched is not None:
+                return matched
+
+
 @dataclass(kw_only=True, slots=True)
 class TraversingApplication(Application):
     trail: Trail = field(default_factory=Trail)
-    views: SignatureMapping = field(default_factory=SignatureMapping)
+    views: ViewRegistry = field(default_factory=ViewRegistry)
 
     def __post_init__(self):
         self.services.add_instance(self, Application)
         self.services.add_scoped(Params)
 
     def endpoint(self, scope: Scope) -> Response:
-        leaf, view_name = self.trail.resolve(
+        leaf, view_path = self.trail.resolve(
             self, scope.environ.path, scope, partial=True
         )
-        try:
-            view = self.views.lookup(
-                scope, leaf, scope.environ.method, name=view_name)
-        except LookupError as err:
-            view = None
+        if not view_path.startswith('/'):
+            view_path = f'/{view_path}'
+        view = self.views.match(leaf, view_path, scope.environ.method)
         if view is None:
             raise HTTPError(404)
 
-        return view.secure_call(scope, leaf, scope.environ.method)
+        params = scope.get(Params)
+        params |= view.params
+
+        scope.register(MatchedRoute, view)
+        return view(scope, leaf)

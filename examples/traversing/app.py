@@ -1,54 +1,101 @@
-from typing import Literal
-from winkel.response import Response
-from winkel import Application, TraversingApplication, Scope
+import wrapt
+import deform
+from typing import Any
+import jsonschema_colander.types
+from winkel import Application, TraversingApplication, Scope, sqldb
 from request import Request
-from models import User, Folder, Document, Invoice
+from models import Company
 from winkel.router import Params
+from sqlmodel import Session
+from winkel import Response, FormData, html, renderer
+from winkel.ui import UI, Templates
+from winkel.router import APIView
+
+
+company_schema = jsonschema_colander.types.Object.from_json(
+    Company.model_json_schema(), config={
+        "": {
+            "exclude": ("id",)
+        },
+    }
+)
+
+def company_creation_form(scope):
+    schema = company_schema().bind(scope=scope)
+    process_btn = deform.form.Button(name='process', title="Process")
+    return deform.form.Form(schema, buttons=(process_btn,))
+
+
+class Traversed(wrapt.ObjectProxy):
+    __parent__: Any
+    __trail__: str
+
+    def __init__(self, wrapped, *, parent: Any, path: str):
+        super().__init__(wrapped)
+        self.__parent__ = parent
+        self.__trail__ = path
 
 
 app = TraversingApplication()
-app.use(Request())
+app.use(
+    Request(),
+    sqldb.SQLDatabase(
+        url="sqlite:///traversing.db"
+    ),
+    UI(
+        templates=Templates('templates'),
+    ),
+)
 
 
-@app.trail.register(Application, '/users/{id}')
-def user_factory(parent: Application, scope: Scope, *, id: str) -> User:
+@app.trail.register(Application, '/company/{company_id}')
+def company_factory(path: str, parent: Application, scope: Scope, *, company_id: str) -> Company:
+    sqlsession = scope.get(Session)
     params = scope.get(Params)
-    params['user_id'] = id
-    return User(parent, id)
+    params['company_id'] = company_id
+    company = sqlsession.get(Company, company_id)
+    return Traversed(company, parent=parent, path=path)
 
 
-@app.trail.register(User, '/folders/{name}')
-def folder_factory(parent: User, scope: Scope, *, name: str) -> Folder:
+@app.views.register(Company, '/{whatever}')
+@html
+def company_index(scope, company):
     params = scope.get(Params)
-    params['folder_name'] = name
-    return Folder(parent, name)
+    return f"Company: {company.name} from {params}"
 
+@app.views.register(Application, '/new_company')
+class CreateCompany(APIView):
 
-@app.trail.register(Folder, '/docs/{id}')
-def document_factory(parent: User, scope: Scope, *, id: str) -> Document:
-    params = scope.get(Params)
-    params['document_id'] = id
-    return Document(parent, id)
+    @html
+    @renderer(template='form/default', layout_name=None)
+    def GET(self, scope, app):
+        form = company_creation_form(scope)
+        return {
+            "rendered_form": form.render()
+        }
 
+    @html
+    @renderer(template='form/default', layout_name=None)
+    def POST(self, scope, app):
+        data = scope.get(FormData)
+        if ('process', 'process') not in data.form:
+            raise NotImplementedError('No action found.')
 
-@app.trail.register(Folder, '/invoices/{id}')
-def invoice_factory(parent: User, scope: Scope, *, id: str) -> Invoice:
-    params = scope.get(Params)
-    params['invoice_id'] = id
-    return Invoice(parent, id)
+        try:
+            form = company_creation_form(scope)
+            appstruct = form.validate(data.form)
+        except deform.exception.ValidationFailure as e:
+            return {
+                "rendered_form": e.render()
+            }
 
-
-@app.views.register((Scope, User, Literal['GET']), name='')
-def user_index(scope, user, method):
-    params = scope.get(Params)
-    return Response(200, body=f"I am a user : {params}")
-
-
-@app.views.register((Scope, Folder, Literal['GET']), name='')
-def folder_index(scope, folder, method):
-    params = scope.get(Params)
-    return Response(200, body=f"I am a folder : {params}")
-
+        sqlsession = scope.get(Session)
+        sqlsession.add(
+            Company(
+                **appstruct
+            )
+        )
+        return Response.redirect(scope.environ.application_uri)
 
 
 wsgi_app = app

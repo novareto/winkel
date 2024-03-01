@@ -92,11 +92,11 @@ class MatchedRoute(t.NamedTuple):
     method: HTTPMethod
     params: Params
 
-    def __call__(self, scope: Scope):
+    def __call__(self, *args, **kwargs):
         if self.route.pipeline is not None:
             return wrapper(
-                self.route.pipeline, self.route.secure_call)(scope)
-        return self.route.secure_call(scope)
+                self.route.pipeline, self.route.secure_call)(*args, **kwargs)
+        return self.route.secure_call(*args, **kwargs)
 
 
 class RouteStore(ElementMapping[t.Tuple[str, HTTPMethod], Route]):
