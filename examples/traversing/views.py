@@ -23,7 +23,7 @@ def url_for(scope, context):
 
         if context.__class__ is not target.__class__:
             path = expand_url_params(
-                *root.factories.reverse(target.__class__, context.__class__), **params
+                *root.factories.reverse(target.__class__, context.__class__), params
             )
             return scope.environ.application_uri + root_stub + path + route_stub
         else:

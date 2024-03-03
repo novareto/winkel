@@ -1,17 +1,18 @@
 from typing import Any
-from elementalist.registries import SignatureMapping
 from winkel.rendering import renderer
 from winkel.traversing.traverser import Traversed
 from winkel.scope import Scope
+from winkel.ui import SlotRegistry, LayoutRegistry, SubSlotRegistry
 from winkel.services.flash import SessionMessages
 from collections import deque
 
 
-slots = SignatureMapping()
-layouts = SignatureMapping()
+slots = SlotRegistry()
+layouts = LayoutRegistry()
+subslots = SubSlotRegistry()
 
 
-@layouts.register((Scope, Any, Any), name="")
+@layouts.register(..., name="")
 @renderer(template='layout', layout_name=None)
 def default_layout(scope: Scope, view: Any, context: Any, name: str, content: str):
     return {
@@ -21,7 +22,7 @@ def default_layout(scope: Scope, view: Any, context: Any, name: str, content: st
     }
 
 
-@slots.register((Scope, Any, Any), name='above_content')
+@slots.register(..., name='above_content')
 class AboveContent:
 
     @renderer(template='slots/above', layout_name=None)
@@ -39,7 +40,7 @@ class AboveContent:
         }
 
 
-@slots.register((Scope, AboveContent, Any, Any), name='messages')
+@subslots.register({'manager': AboveContent}, name='messages')
 @renderer(template='slots/messages', layout_name=None)
 def messages(scope: Scope, manager: AboveContent, view: Any, context: Any):
     flash = scope.get(SessionMessages)
@@ -51,7 +52,7 @@ def messages(scope: Scope, manager: AboveContent, view: Any, context: Any):
     }
 
 
-@slots.register((Scope, AboveContent, Any, Any), name='crumbs')
+@subslots.register({'manager': AboveContent}, name='crumbs')
 @renderer(template='slots/breadcrumbs', layout_name=None)
 def breadcrumbs(scope: Scope, manager: AboveContent, view: Any, context: Any):
     node = context

@@ -2,7 +2,6 @@ import pathlib
 from fanstatic import Fanstatic
 import http_session_file
 from js.jquery import jquery
-from request import Request
 from winkel.services import Flash, HTTPSessions, SQLDatabase
 from winkel.traversing import Application
 from winkel.ui import UI
@@ -15,13 +14,13 @@ app.views |= views.routes
 app.factories |= factories.registry
 
 app.use(
-    Request(),
     SQLDatabase(
         url="sqlite:///traversing.db"
     ),
     UI(
         templates=Templates('templates'),
         slots=ui.slots,
+        subslots=ui.subslots,
         layouts=ui.layouts,
         resources={jquery}
     ),

@@ -7,13 +7,13 @@ from winkel.response import Response
 from winkel.traversing.traverser import Traverser, ViewRegistry
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass(kw_only=True)
 class Application(Root):
     factories: Traverser = field(default_factory=Traverser)
     views: ViewRegistry = field(default_factory=ViewRegistry)
 
     def __post_init__(self):
-        self.services.add_instance(self, Application)
+        super().__post_init__()
         self.services.add_instance(self.views, ViewRegistry)
         self.services.add_scoped(Params)
 

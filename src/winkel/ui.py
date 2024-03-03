@@ -1,17 +1,44 @@
 import ast
+import typing
 from inspect import isclass
 from dataclasses import dataclass, field
-from typing import Set, Callable, Any
+from typing import Set, Any, NamedTuple, Type
 from fanstatic import Group, Resource
 from chameleon.codegen import template
 from chameleon.astutil import Symbol
-from elementalist.registries import SignatureMapping
+from winkel.registry import ComponentRegistry
 from winkel.scope import Scope
 from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.service import Installable
+from beartype import beartype
 
 
-Slot = Callable[[Scope, str, Any], str]
+class SlotRegistry(ComponentRegistry):
+
+    @beartype
+    class Types(NamedTuple):
+        scope: Type[Scope] = Scope
+        view: Type = Any
+        context: Type = Any
+
+
+class SubSlotRegistry(ComponentRegistry):
+
+    @beartype
+    class Types(NamedTuple):
+        scope: Type[Scope] = Scope
+        manager: Type = Any
+        view: Type = Any
+        context: Type = Any
+
+
+class LayoutRegistry(ComponentRegistry):
+
+    @beartype
+    class Types(NamedTuple):
+        scope: Type[Scope] = Scope
+        view: Type = Any
+        context: Type = Any
 
 
 def query_slot(econtext, name):
@@ -32,7 +59,7 @@ def query_slot(econtext, name):
         else:
             manager = manager.value
 
-        slots = ui.slots.match_grouped(scope, manager, view, context)
+        slots = ui.subslots.match_grouped(scope, manager, view, context)
         return manager(
             scope, view, context, slots=slots.values()
         )
@@ -65,8 +92,9 @@ class UI(Installable):
 
     __provides__ = ['UI']
 
-    slots: SignatureMapping = field(default_factory=SignatureMapping)
-    layouts: SignatureMapping = field(default_factory=SignatureMapping)
+    slots: ComponentRegistry = field(default_factory=SlotRegistry)
+    subslots: ComponentRegistry = field(default_factory=SubSlotRegistry)
+    layouts: ComponentRegistry = field(default_factory=LayoutRegistry)
     templates: Templates = field(default_factory=Templates)
     macros: Templates = field(default_factory=Templates)
     resources: Set[Group | Resource] = field(default_factory=set)

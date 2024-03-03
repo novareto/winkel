@@ -8,7 +8,7 @@ from winkel.ui import UI
 from winkel.routing import Application
 from winkel.templates import Templates
 from winkel.policies import NoAnonymous
-import register, login, views, actions, ui, folder, document, request, db
+import register, login, views, actions, ui, folder, document, db
 from winkel.services import (
     Transactional, HTTPSessions, Flash, SessionAuthenticator,
     SQLDatabase, TranslationService
@@ -36,7 +36,6 @@ app.register_handler('scope.init')(
 
 
 app.use(
-    request.Request(),
     Transactional(),
     SQLDatabase(
         url="sqlite:///database.db"
@@ -48,6 +47,7 @@ app.use(
     ),
     UI(
         slots=ui.slots,
+        subslots=ui.subslots,
         layouts=ui.layouts,
         templates=Templates('templates'),
         resources={jquery}

@@ -6,12 +6,12 @@ from winkel.response import Response
 from winkel.routing.router import Router, MatchedRoute, Params
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass(kw_only=True)
 class Application(Root):
     router: Router = field(default_factory=Router)
 
     def __post_init__(self):
-        self.services.add_instance(self, Application)
+        super().__post_init__()
         self.services.add_instance(self.router, Router)
 
     def finalize(self):
