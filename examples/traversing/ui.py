@@ -50,9 +50,10 @@ def messages(scope: Scope, manager: AboveContent, view: Any, context: Any):
         'manager': manager
     }
 
+
 @slots.register((Scope, AboveContent, Any, Any), name='crumbs')
 @renderer(template='slots/breadcrumbs', layout_name=None)
-def breadcumbs(scope: Scope, manager: AboveContent, view: Any, context: Any):
+def breadcrumbs(scope: Scope, manager: AboveContent, view: Any, context: Any):
     node = context
     parents = deque()
     while node is not None:

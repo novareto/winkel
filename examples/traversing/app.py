@@ -6,16 +6,11 @@ from request import Request
 from winkel.services import Flash, HTTPSessions, SQLDatabase
 from winkel.traversing import Application
 from winkel.ui import UI
-from winkel.ui.slot import SlotExpr
-from winkel.templates import Templates, EXPRESSION_TYPES
+from winkel.templates import Templates
 import factories, views, ui
 
 
-EXPRESSION_TYPES['slot'] = SlotExpr
-
-
 app = Application()
-
 app.views |= views.routes
 app.factories |= factories.registry
 

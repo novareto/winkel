@@ -6,8 +6,7 @@ from fanstatic import Fanstatic
 from js.jquery import jquery
 from winkel import UI
 from winkel.routing import Application
-from winkel.ui.slot import SlotExpr
-from winkel.templates import Templates, EXPRESSION_TYPES
+from winkel.templates import Templates
 from winkel.policies import NoAnonymous
 import register, login, views, actions, ui, folder, document, request, db
 from winkel.services import (
@@ -16,11 +15,10 @@ from winkel.services import (
 )
 
 app = Application()
-EXPRESSION_TYPES['slot'] = SlotExpr
 
 app.services.register(actions.Actions, instance=actions.actions)
-app.router |= (
-        register.routes | login.routes | views.routes | folder.routes | document.routes
+app.router = (
+    register.routes | login.routes | views.routes | folder.routes | document.routes
 )
 
 vernacular.COMPILE = True
