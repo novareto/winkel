@@ -7,8 +7,7 @@ from winkel.traversing import Traverser
 from models import Company, Course, Session
 
 
-trail = Traverser()
-
+registry = Traverser()
 
 
 @wrapt.decorator
@@ -17,7 +16,7 @@ def pass_through(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-@trail.register(Application, '/company/<company_id>', pipeline=(pass_through,))
+@registry.register(Application, '/company/<company_id>', pipeline=(pass_through,))
 def company_factory(
         path: str, parent: Application, scope: Scope, *,
         company_id: str) -> Company:
@@ -29,7 +28,7 @@ def company_factory(
     return company
 
 
-@trail.register(Company, '/courses/<course_id>')
+@registry.register(Company, '/courses/<course_id>')
 def course_factory(
         path: str, parent: Company, scope: Scope, *,
         course_id: str) -> Course:
@@ -45,7 +44,7 @@ def course_factory(
     return course
 
 
-@trail.register(Course, '/sessions/<session_id>')
+@registry.register(Course, '/sessions/<session_id>')
 def session_factory(
         path: str, parent: Course, scope: Scope, *,
         session_id: str) -> Session:

@@ -4,8 +4,7 @@ from winkel.app import Root
 from winkel.scope import Scope
 from winkel.routing import MatchedRoute, Params
 from winkel.response import Response
-from winkel.traversing.traverser import Traverser
-from winkel.traversing.views import ViewRegistry
+from winkel.traversing.traverser import Traverser, ViewRegistry
 
 
 @dataclass(kw_only=True, slots=True)
@@ -19,7 +18,7 @@ class Application(Root):
         self.services.add_scoped(Params)
 
     def endpoint(self, scope: Scope) -> Response:
-        leaf, view_path = self.factories.resolve(
+        leaf, view_path = self.factories.traverse(
             self, scope.environ.path, scope, partial=True
         )
         if not view_path.startswith('/'):

@@ -2,10 +2,9 @@ import typing as t
 from wrapt import ObjectProxy
 from pathlib import PurePosixPath
 from inspect import signature, _empty as empty, isclass
-from collections import defaultdict
-from winkel.pipeline import wrapper
-from winkel.routing.router import Router, Route, HTTPMethods, get_routables
-from winkel.datastructures import TypeMapping
+from winkel.routing.router import Route
+from winkel.datastructures import TypedSet
+from winkel.traversing.typed import TypedRouters
 
 
 class Traversed(ObjectProxy):
@@ -51,50 +50,27 @@ class Node:
         return f'{self.cls} -> {self.route}'
 
 
-class Traverser:
+class ViewRegistry(TypedRouters):
+    pass
 
-    __slots__ = ('_reverse', '_routers')
+
+class Traverser(TypedRouters):
+
+    __slots__ = ('_reverse',)
 
     def __init__(self):
-        self._routers: t.Dict[t.Type, Router] = defaultdict(Router)
-        self._reverse: TypeMapping[t.Any, Node] = TypeMapping()
-
-    def finalize(self):
-        for router in self._routers.values():
-            router.finalize()
-
-    @staticmethod
-    def lineage(cls):
-        yield from cls.__mro__
-
-    def lookup(self, cls) -> t.Optional[Router]:
-        for parent in self.lineage(cls):
-            if parent in self._routers:
-                yield self._routers[parent]
+        self._reverse: TypedSet[t.Any, Node] = TypedSet()
+        super().__init__()
 
     def add(self, root: t.Type[t.Any], path: str, factory: t.Callable, **kwargs):
         sig = signature(factory)
         if sig.return_annotation is empty:
             raise TypeError('Factories need to specify a return type.')
-        route = self._routers[root].add(path, factory, **kwargs)
+        route = self[root].add(path, factory, **kwargs)
         self._reverse.add(sig.return_annotation, Node(root, route))
         return route
 
-    def register(self,
-                 root: t.Type,
-                 path: str,
-                 pipeline = None,
-                 methods: HTTPMethods | None = None,
-                 **kwargs):
-        def routing(value: t.Any):
-            for endpoint, verbs in get_routables(value, methods):
-                if pipeline:
-                    endpoint = wrapper(pipeline, endpoint)
-                self.add(root, path, endpoint, methods=verbs, **kwargs)
-            return value
-        return routing
-
-    def resolve(
+    def traverse(
             self,
             root: t.Any,
             path: str,
@@ -111,7 +87,7 @@ class Traverser:
                     if not branch:
                         return resolved, ''
                     else:
-                        return self.resolve(resolved, branch, context=context, partial=partial)
+                        return self.traverse(resolved, branch, context=context, partial=partial)
         if partial:
             return root, path
         raise LookupError()
@@ -128,7 +104,7 @@ class Traverser:
         while path_index < len(path_list):
             current_path = path_list[path_index]
             last_node = current_path[-1]
-            next_nodes = self._reverse[last_node]
+            next_nodes = tuple(self._reverse[last_node])
 
             # Search goal node
             try:
@@ -145,7 +121,7 @@ class Traverser:
 
             # Add new paths
             for next_node in next_nodes:
-                if not next_node in previous_nodes:
+                if next_node not in previous_nodes:
                     new_path = current_path[:]
                     new_path.append(next_node)
                     path_list.append(new_path)
@@ -155,3 +131,13 @@ class Traverser:
             path_index += 1
         # No path is found
         return []
+
+    def __or__(self, other: 'Traverser'):
+        new: Traverser = super().__or__(other)
+        new._reverse = self._reverse | other._reverse
+        return new
+
+    def __ior__(self, other: 'Traverser'):
+        new: Traverser = super().__ior__(other)
+        new._reverse |= other._reverse
+        return new

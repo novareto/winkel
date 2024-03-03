@@ -4,7 +4,7 @@ from winkel.traversing import Application
 from winkel.traversing.traverser import Traversed
 from winkel.routing.router import expand_url_params
 from winkel import Response, html, renderer
-from winkel.traversing.views import ViewRegistry
+from winkel.traversing.traverser import ViewRegistry
 from models import Company, Course, Session
 from form import Form, trigger
 

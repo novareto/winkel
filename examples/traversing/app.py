@@ -14,11 +14,10 @@ import factories, views, ui
 EXPRESSION_TYPES['slot'] = SlotExpr
 
 
-app = Application(
-    factories=factories.trail,
-)
+app = Application()
 
 app.views |= views.routes
+app.factories |= factories.registry
 
 app.use(
     Request(),
