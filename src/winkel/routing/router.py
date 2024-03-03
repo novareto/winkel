@@ -79,7 +79,7 @@ class MatchedRoute(NamedTuple):
     params: Params
 
 
-def expand_url_params(path: str, params: Sequence, **kwargs):
+def expand_url_params(path: str, params: Sequence, kwargs):
     for param_info in params:
         try:
             supplied_param = str(kwargs.pop(param_info.name))
@@ -216,5 +216,5 @@ class Router(BaseRouter):
             return URL(path=out)
 
         route.finalize()
-        out = expand_url_params(out, route.params.values(), **kwargs)
+        out = expand_url_params(out, route.params.values(), kwargs)
         return URL(path=out, query_dict=kwargs)
