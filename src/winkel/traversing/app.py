@@ -17,6 +17,12 @@ class Application(Root):
         self.services.add_instance(self.views, ViewRegistry)
         self.services.add_scoped(Params)
 
+    def finalize(self):
+        # everything that needs doing before serving requests.
+        self.services.build_provider()
+        self.factories.finalize()
+        self.views.finalize()
+
     def endpoint(self, scope: Scope) -> Response:
         leaf, view_path = self.factories.traverse(
             self, scope.environ.path, scope, partial=True

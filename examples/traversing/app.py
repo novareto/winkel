@@ -43,6 +43,5 @@ app.use(
     Flash()
 )
 
-app.factories.finalize()
-app.views.finalize()
+app.finalize()
 wsgi_app = Fanstatic(app)

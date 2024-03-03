@@ -1,7 +1,7 @@
 import re
 import inspect
 import types
-from typing import Sequence, Any, NamedTuple, Type, get_args
+from typing import Sequence, Any, NamedTuple, Type, get_args, Iterator
 from sanic_routing import BaseRouter, Route
 from sanic_routing.exceptions import RouteExists, NotFound
 from horseman.types import HTTPMethod
@@ -146,44 +146,48 @@ class Router(BaseRouter):
             return value
         return routing
 
+    def all_routes(self) -> Iterator[Route]:
+        for group in self.static_routes:
+            yield from group
+        for group in self.dynamic_routes:
+            yield from group
+        for group in self.regex_routes:
+            yield from group
+
     def __or__(self, other) -> 'Router':
         router = Router()
         for merger in (self, other):
-            for mapping in (merger.regex_routes, merger.dynamic_routes, merger.static_routes):
-                for key, group in mapping.items():
-                    for route in group:
-                        try:
-                            router.add(
-                                route.path,
-                                route.handler,
-                                route.methods,
-                                name=route.name,
-                                requirements=route.requirements,
-                                overwrite=False,
-                                priority=route.priority,
-                                append=False
-                            )
-                        except RouteExists:
-                            pass
+            for route in merger.all_routes():
+                try:
+                    router.add(
+                        route.path,
+                        route.handler,
+                        route.methods,
+                        name=route.name,
+                        requirements=route.requirements,
+                        overwrite=False,
+                        priority=route.priority,
+                        append=False
+                    )
+                except RouteExists:
+                    pass
         return router
 
-    def __ior__(self, other):
-        for mapping in (other.regex_routes, other.dynamic_routes, other.static_routes):
-            for key, group in mapping.items():
-                for route in group:
-                    try:
-                        self.add(
-                            route.path,
-                            route.handler,
-                            route.methods,
-                            route.name,
-                            requirements=route.requirements,
-                            priority=route.priority,
-                            overwrite=False,
-                            append=False
-                        )
-                    except RouteExists:
-                        pass
+    def __ior__(self, other: 'Router') -> 'Router':
+        for route in other.all_routes():
+            try:
+                self.add(
+                    route.path,
+                    route.handler,
+                    route.methods,
+                    route.name,
+                    requirements=route.requirements,
+                    priority=route.priority,
+                    overwrite=False,
+                    append=False
+                )
+            except RouteExists:
+                pass
         return self
 
     def url_for(self, view_name: str, **kwargs) -> URL:

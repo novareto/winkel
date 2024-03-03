@@ -54,6 +54,10 @@ class Root(Eventful, RootNode):
     def __post_init__(self):
         self.services.add_instance(self, Root)
 
+    def finalize(self):
+        # everything that needs doing before serving requests.
+        self.services.build_provider()
+
     def use(self, *components: Installable):
         for component in components:
             component.install(self.services)

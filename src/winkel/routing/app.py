@@ -14,6 +14,11 @@ class Application(Root):
         self.services.add_instance(self, Application)
         self.services.add_instance(self.router, Router)
 
+    def finalize(self):
+        # everything that needs doing before serving requests.
+        self.services.build_provider()
+        self.router.finalize()
+
     def endpoint(self, scope: Scope) -> Response:
         route: MatchedRoute | None = self.router.get(
             scope.environ.path,

@@ -77,9 +77,8 @@ class Traverser(TypedRouters):
             context: t.Optional[t.Mapping] = None,
             partial: bool = None) -> t.Tuple[t.Any, str]:
 
-        explore = tuple(paths(path))
-        for matcher in self.lookup(root.__class__):
-            for stub, branch in explore:
+        for stub, branch in paths(path):
+            for matcher in self.lookup(root.__class__):
                 found = matcher.get(stub)
                 if found:
                     resolved = found.handler(stub, root, context, **found.params)
@@ -104,20 +103,18 @@ class Traverser(TypedRouters):
         while path_index < len(path_list):
             current_path = path_list[path_index]
             last_node = current_path[-1]
-            next_nodes = tuple(self._reverse[last_node])
+            next_nodes = self._reverse[last_node]
 
             # Search goal node
-            try:
-                found = next_nodes.index(node2)
-                current_path.append(next_nodes[found])
-                resolved = '/'
-                params = []
-                for node in reversed(current_path[1:]):
-                    resolved += node.route.path
-                    params.extend(node.route.params.values())
-                return resolved, params
-            except ValueError:
-                pass
+            for candidate in next_nodes:
+                if candidate == node2:
+                    current_path.append(candidate)
+                    resolved = '/'
+                    params = []
+                    for node in reversed(current_path[1:]):
+                        resolved += node.route.path
+                        params.extend(node.route.params.values())
+                    return resolved, params
 
             # Add new paths
             for next_node in next_nodes:
