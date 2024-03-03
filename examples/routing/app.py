@@ -4,7 +4,7 @@ import vernacular
 import logging.config
 from fanstatic import Fanstatic
 from js.jquery import jquery
-from winkel import UI
+from winkel.ui import UI
 from winkel.routing import Application
 from winkel.templates import Templates
 from winkel.policies import NoAnonymous

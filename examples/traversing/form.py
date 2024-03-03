@@ -5,7 +5,7 @@ from func_annotator import annotation
 from horseman.exceptions import HTTPError
 from winkel import html, renderer
 from winkel.routing import APIView
-from winkel import FormData
+from winkel.meta import FormData
 
 
 class trigger(annotation):

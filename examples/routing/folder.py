@@ -3,7 +3,8 @@ import jsonschema_colander.types
 from sqlmodel import Session
 from winkel.routing import Application, APIView, Router, Params
 from winkel.services.flash import SessionMessages
-from winkel import User, Response, FormData, html, renderer
+from winkel.meta import FormData
+from winkel import User, Response, html, renderer
 from models import Folder
 
 

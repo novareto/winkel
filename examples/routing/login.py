@@ -2,7 +2,8 @@ import colander
 import deform
 from winkel.routing import APIView, Router
 from winkel.services.flash import SessionMessages
-from winkel import html, renderer, Response, FormData, Authenticator
+from winkel.meta import FormData
+from winkel import html, renderer, Response, Authenticator
 
 
 routes = Router()

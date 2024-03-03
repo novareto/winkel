@@ -1,6 +1,8 @@
 from winkel.routing import Router
-from winkel import Query, Response, User, html, json, renderer
+from winkel.meta import Query
+from winkel import Response, User, html, json, renderer
 from winkel.routing import Application
+
 
 routes = Router()
 

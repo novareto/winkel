@@ -44,7 +44,6 @@ def renderer(wrapped=None, *,
             rendered = tpl.render(
                 **namespace,
                 translate=translator and translator.translate or None,
-                target_language=locale
             )
 
         elif isinstance(content, str):

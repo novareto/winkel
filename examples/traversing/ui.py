@@ -1,6 +1,6 @@
 from typing import Any
 from elementalist.registries import SignatureMapping
-from winkel.ui.rendering import renderer
+from winkel.rendering import renderer
 from winkel.traversing.traverser import Traversed
 from winkel.scope import Scope
 from winkel.services.flash import SessionMessages

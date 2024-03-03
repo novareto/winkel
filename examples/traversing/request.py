@@ -1,5 +1,5 @@
 from winkel.service import Installable, factory
-from winkel import Query, Cookies, ContentType, FormData
+from winkel.meta import Query, Cookies, ContentType, FormData
 from winkel.scope import Scope
 
 

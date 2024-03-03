@@ -147,11 +147,11 @@ class Router(BaseRouter):
         return routing
 
     def all_routes(self) -> Iterator[Route]:
-        for group in self.static_routes:
+        for group in self.static_routes.values():
             yield from group
-        for group in self.dynamic_routes:
+        for group in self.dynamic_routes.values():
             yield from group
-        for group in self.regex_routes:
+        for group in self.regex_routes.values():
             yield from group
 
     def __or__(self, other) -> 'Router':
