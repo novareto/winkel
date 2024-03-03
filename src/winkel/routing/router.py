@@ -115,10 +115,10 @@ def expand_url_params(path: str, params: Sequence, **kwargs):
                     )
                 raise TypeError(msg)
 
-        # replace the parameter in the URL with the supplied value
+            # replace the parameter in the URL with the supplied value
         replacement_regex = f"(<{param_info.name}.*?>)"
-        return re.sub(replacement_regex, supplied_param, path)
-
+        path = re.sub(replacement_regex, supplied_param, path)
+    return path
 
 class Router(BaseRouter):
     DEFAULT_METHOD = "GET"
