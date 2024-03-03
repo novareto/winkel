@@ -1,8 +1,8 @@
-from winkel.routing import RouteStore
+from winkel.routing import Router
 from winkel import Query, Response, User, html, json, renderer
 from winkel.routing import Application
 
-routes = RouteStore()
+routes = Router()
 
 
 @routes.register('/')

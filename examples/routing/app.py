@@ -102,5 +102,5 @@ logging.config.dictConfig({
     }
 })
 
-
+app.router.finalize()
 wsgi_app = Fanstatic(app)

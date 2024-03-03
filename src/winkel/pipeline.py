@@ -7,7 +7,7 @@ from winkel.response import Response
 from winkel.service import Configuration
 
 
-Handler = t.Callable[[Scope], Response]
+Handler = t.Callable[[...], Response]
 HandlerWrapper = t.Callable[[Handler], Handler]
 
 

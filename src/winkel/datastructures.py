@@ -1,8 +1,12 @@
 import typing as t
 import bisect
+from inspect import isclass
+from collections.abc import Hashable
 
 
 C = t.TypeVar('C')
+H = t.TypeVar('H', bound=Hashable)
+T = t.TypeVar('T', covariant=True)
 
 
 class PriorityChain(t.Generic[C]):
@@ -36,3 +40,22 @@ class PriorityChain(t.Generic[C]):
 
     def clear(self):
         self._chain.clear()
+
+
+class TypeMapping(t.Generic[T, H], t.Dict[t.Type[T], t.List[H]]):
+
+    __slots__ = ()
+
+    def add(self, cls: t.Type[T], component: H):
+        components = self.setdefault(cls, [])
+        components.append(component)
+
+    @staticmethod
+    def lineage(cls: t.Type[T]):
+        yield from cls.__mro__
+
+    def lookup(self, co: t.Type[T] | T) -> t.Iterator[H]:
+        cls = isclass(co) and co or co.__class__
+        for parent in self.lineage(cls):
+            if parent in self:
+                yield from self[parent]

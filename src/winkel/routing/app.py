@@ -15,7 +15,7 @@ class Application(Root):
         self.services.add_instance(self.router, Router)
 
     def endpoint(self, scope: Scope) -> Response:
-        route: MatchedRoute | None = self.router.match(
+        route: MatchedRoute | None = self.router.get(
             scope.environ.path,
             scope.environ.method
         )
@@ -25,4 +25,4 @@ class Application(Root):
         scope.register(MatchedRoute, route)
         scope.register(Params, route.params)
         self.notify('route.found', scope, route)
-        return route(scope)
+        return route.handler(scope)

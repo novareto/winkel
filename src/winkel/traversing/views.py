@@ -13,19 +13,23 @@ class ViewRegistry(dict):
             if parent in self:
                 yield self[parent]
 
+    def finalize(self):
+        for router in self.values():
+            router.finalize()
+
     def register(self, context: Type, *args, **kwargs):
         router = self.setdefault(context, Router())
         return router.register(*args, **kwargs)
 
     def route_for(self, context: Any, name: str, **params):
         for router in self.lookup(context.__class__):
-            if router.has_route(name):
-                return router.url_for(name, **params)
+            if name in router.name_index:
+                return str(router.url_for(name, **params))
         raise LookupError(f'Could not find route {name!r} for {context!r}')
 
     def match(self, context: Any, path: str, method: str):
         for routes in self.lookup(context.__class__):
-            matched: MatchedRoute | None = routes.match(path, method)
+            matched: MatchedRoute | None = routes.get(path, method)
             if matched is not None:
                 return matched
 

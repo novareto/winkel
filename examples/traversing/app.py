@@ -15,7 +15,7 @@ EXPRESSION_TYPES['slot'] = SlotExpr
 
 
 app = Application(
-    trail=factories.trail,
+    factories=factories.trail,
 )
 
 app.views |= views.routes
@@ -44,5 +44,6 @@ app.use(
     Flash()
 )
 
-
+app.factories.finalize()
+app.views.finalize()
 wsgi_app = Fanstatic(app)

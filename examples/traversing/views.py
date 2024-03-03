@@ -1,11 +1,12 @@
 import deform
 from sqlmodel import Session as SQLSession, select
 from winkel.traversing import Application
+from winkel.traversing.traverser import Traversed
+from winkel.routing.router import expand_url_params
 from winkel import Response, html, renderer
 from winkel.traversing.views import ViewRegistry
 from models import Company, Course, Session
 from form import Form, trigger
-from factories import Traversed
 
 
 routes = ViewRegistry()
@@ -21,11 +22,12 @@ def url_for(scope, context):
             root_stub = ''
 
         if context.__class__ is not target.__class__:
-            trail = root.trail.reverse(target.__class__, context.__class__)
-            path = trail.format(**params)
-            return root_stub + path + route_stub
+            path = expand_url_params(
+                *root.factories.reverse(target.__class__, context.__class__), **params
+            )
+            return scope.environ.application_uri + root_stub + path + route_stub
         else:
-            return root_stub + route_stub
+            return scope.environ.application_uri + root_stub + route_stub
     return resolve_url
 
 

@@ -1,16 +1,16 @@
 from dataclasses import dataclass, field
 from horseman.exceptions import HTTPError
-from buckaroo import Registry as Trail
 from winkel.app import Root
 from winkel.scope import Scope
 from winkel.routing import MatchedRoute, Params
 from winkel.response import Response
+from winkel.traversing.traverser import Traverser
 from winkel.traversing.views import ViewRegistry
 
 
 @dataclass(kw_only=True, slots=True)
 class Application(Root):
-    trail: Trail = field(default_factory=Trail)
+    factories: Traverser = field(default_factory=Traverser)
     views: ViewRegistry = field(default_factory=ViewRegistry)
 
     def __post_init__(self):
@@ -19,7 +19,7 @@ class Application(Root):
         self.services.add_scoped(Params)
 
     def endpoint(self, scope: Scope) -> Response:
-        leaf, view_path = self.trail.resolve(
+        leaf, view_path = self.factories.resolve(
             self, scope.environ.path, scope, partial=True
         )
         if not view_path.startswith('/'):
@@ -32,4 +32,4 @@ class Application(Root):
         params |= view.params
 
         scope.register(MatchedRoute, view)
-        return view(scope, leaf)
+        return view.handler(scope, leaf)

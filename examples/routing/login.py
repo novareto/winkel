@@ -1,11 +1,11 @@
 import colander
 import deform
-from winkel.routing import APIView, RouteStore
+from winkel.routing import APIView, Router
 from winkel.services.flash import SessionMessages
 from winkel import html, renderer, Response, FormData, Authenticator
 
 
-routes = RouteStore()
+routes = Router()
 
 
 class LoginSchema(colander.Schema):

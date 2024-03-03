@@ -26,7 +26,8 @@ dependencies = [
   "elementalist",
   "vernacular",
   "content-negotiation",
-  "buckaroo"
+  "sanic_routing",
+  "imurl"
 ]
 
 [tool.setuptools.packages.find]
