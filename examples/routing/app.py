@@ -80,7 +80,7 @@ logging.config.dictConfig({
     },
     'handlers': {
         'default': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'formatter': 'standard',
             'class': 'logging.StreamHandler',
             'stream': 'ext://sys.stdout',  # Default is stderr
@@ -101,4 +101,10 @@ logging.config.dictConfig({
 })
 
 app.finalize()
-wsgi_app = Fanstatic(app)
+from wsgi_lineprof.middleware import LineProfilerMiddleware
+from wsgi_lineprof.filters import FilenameFilter, TotalTimeSorter
+
+wsgi_app = LineProfilerMiddleware(
+    Fanstatic(app),
+    filters=[TotalTimeSorter()]
+)

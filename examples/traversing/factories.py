@@ -12,7 +12,7 @@ registry = Traverser()
 
 @wrapt.decorator
 def pass_through(wrapped, instance, args, kwargs):
-    print("ran through")
+    #print("ran through")
     return wrapped(*args, **kwargs)
 
 
