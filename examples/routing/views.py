@@ -3,6 +3,8 @@ from winkel.meta import Query, Cookies
 from winkel import Response, User, html, json, renderer
 from winkel.routing import Application
 from winkel.utils import ondemand
+from winkel.services import Mailman
+from winkel.response import Response
 
 
 routes = Router()
@@ -60,3 +62,13 @@ def filtered(scope):
 @routes.register('/test/error')
 def test2(scope):
     raise NotImplementedError("Damn")
+
+
+@routes.register('/test/mailer')
+@html
+def mail(scope):
+    mailman = scope.get(Mailman)
+    mailman.post(
+         'test@test.com', ['toto@test.com'], 'Test', 'A text.'
+    )
+    return 'I sent an email.'

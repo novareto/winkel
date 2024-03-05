@@ -4,6 +4,7 @@ from .flash import Flash
 from .auth import SessionAuthenticator
 from .sqldb import SQLDatabase, Session
 from .translation import TranslationService
+from .post import Mailman, PostOffice
 
 
 __all__ = [

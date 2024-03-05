@@ -26,7 +26,8 @@ dependencies = [
   "vernacular",
   "content-negotiation",
   "sanic_routing",
-  "imurl"
+  "imurl",
+  "plum-dispatch"
 ]
 
 [tool.setuptools.packages.find]

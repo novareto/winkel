@@ -11,7 +11,7 @@ from winkel.policies import NoAnonymous
 import register, login, views, actions, ui, folder, document, db
 from winkel.services import (
     Transactional, HTTPSessions, Flash, SessionAuthenticator,
-    SQLDatabase, TranslationService
+    SQLDatabase, TranslationService, PostOffice
 )
 
 app = Application()
@@ -37,6 +37,9 @@ app.register_handler('scope.init')(
 
 app.use(
     Transactional(),
+    PostOffice(
+        path='/tmp/test.mail'
+    ),
     SQLDatabase(
         url="sqlite:///database.db"
     ),
