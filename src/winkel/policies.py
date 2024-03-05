@@ -27,7 +27,7 @@ class NoAnonymous(Configuration):
             allowed.add(PurePosixPath(self.login_url))
         return frozenset(allowed)
 
-    def check_access(self, scope: Scope) -> Response | None:
+    def check_access(self, scope: Scope, *args, **kwargs) -> Response | None:
         # we skip unnecessary checks if it's not protected.
         path = PurePosixPath(scope.environ.path)
         for bypass in self.unprotected:
@@ -46,7 +46,7 @@ class NoAnonymous(Configuration):
 class CORS(Configuration):
     policy: CORSPolicy
 
-    def preflight(self, scope: Scope) -> Response | None:
+    def preflight(self, scope: Scope, *args, **kwargs) -> Response | None:
         if scope.environ.method == 'OPTIONS':
             # We intercept the preflight.
             # If a route was possible registered for OPTIONS,
