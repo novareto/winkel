@@ -38,11 +38,5 @@ app.use(
 )
 
 app.finalize()
+wsgi_app = Fanstatic(app)
 
-from wsgi_lineprof.middleware import LineProfilerMiddleware
-from wsgi_lineprof.filters import FilenameFilter, TotalTimeSorter
-
-wsgi_app = LineProfilerMiddleware(
-    Fanstatic(app),
-    filters=[TotalTimeSorter()]
-)

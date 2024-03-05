@@ -44,6 +44,7 @@ def renderer(wrapped=None, *,
             rendered = tpl.render(
                 **namespace,
                 translate=translator and translator.translate or None,
+                target_language=locale
             )
 
         elif isinstance(content, str):
@@ -55,12 +56,11 @@ def renderer(wrapped=None, *,
         if layout_name is not None:
             view = namespace['view']
             context = namespace['context']
-            layout = ui.layouts.lookup(
+            layout = ui.layouts.fetch(
                 scope, view, context, name=layout_name
             )
-            return layout.secure_call(
-                scope, view, context,
-                name=layout_name, content=rendered
+            return layout(
+                scope, view, context, name=layout_name, content=rendered
             )
 
         return rendered

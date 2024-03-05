@@ -1,10 +1,20 @@
 from winkel.routing import Router
-from winkel.meta import Query
+from winkel.meta import Query, Cookies
 from winkel import Response, User, html, json, renderer
 from winkel.routing import Application
+from winkel.utils import ondemand
 
 
 routes = Router()
+
+
+@routes.register('/test/ondemand')
+@html
+@ondemand
+def DI(user: User):
+    import html
+    return html.escape(str(user))
+
 
 
 @routes.register('/')

@@ -23,7 +23,6 @@ dependencies = [
   "itsdangerous",
   "http_session",
   "transaction",
-  "elementalist",
   "vernacular",
   "content-negotiation",
   "sanic_routing",

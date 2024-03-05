@@ -101,10 +101,4 @@ logging.config.dictConfig({
 })
 
 app.finalize()
-from wsgi_lineprof.middleware import LineProfilerMiddleware
-from wsgi_lineprof.filters import FilenameFilter, TotalTimeSorter
-
-wsgi_app = LineProfilerMiddleware(
-    Fanstatic(app),
-    filters=[TotalTimeSorter()]
-)
+wsgi_app = Fanstatic(app)

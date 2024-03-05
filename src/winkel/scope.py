@@ -1,6 +1,7 @@
 import typing as t
+from inspect import _empty
 from contextlib import ExitStack
-from rodi import ActivationScope, Services
+from rodi import ActivationScope, Services, Dependency, Signature
 from winkel.meta import Environ, WSGIEnvironWrapper
 
 
@@ -28,3 +29,19 @@ class Scope(ActivationScope):
 
     def __contains__(self, key):
         return key in self.scoped_services or key in self.provider
+
+    def exec(self, method):
+        sig = Signature.from_callable(method)
+        params = {
+            key: Dependency(key, value.annotation)
+            for key, value in sig.parameters.items()
+        }
+        fns = []
+
+        for key, param in params.items():
+            if param.annotation is _empty:
+                fns.append(self.get(key))
+            else:
+                fns.append(self.get(param.annotation))
+
+        return method(*fns)

@@ -1,44 +1,42 @@
 import ast
-import typing
-from inspect import isclass
 from dataclasses import dataclass, field
-from typing import Set, Any, NamedTuple, Type
+from typing import Set, Any, NamedTuple
 from fanstatic import Group, Resource
 from chameleon.codegen import template
 from chameleon.astutil import Symbol
-from winkel.registry import ComponentRegistry
+from winkel.registries import TypedRegistry, Registry
 from winkel.scope import Scope
 from winkel.templates import Templates, EXPRESSION_TYPES
 from winkel.service import Installable
 from beartype import beartype
 
 
-class SlotRegistry(ComponentRegistry):
+class SlotRegistry(TypedRegistry):
 
     @beartype
     class Types(NamedTuple):
-        scope: Type[Scope] = Scope
-        view: Type = Any
-        context: Type = Any
+        scope: type[Scope] = Scope
+        view: type = Any
+        context: type = Any
 
 
-class SubSlotRegistry(ComponentRegistry):
-
-    @beartype
-    class Types(NamedTuple):
-        scope: Type[Scope] = Scope
-        manager: Type = Any
-        view: Type = Any
-        context: Type = Any
-
-
-class LayoutRegistry(ComponentRegistry):
+class SubSlotRegistry(TypedRegistry):
 
     @beartype
     class Types(NamedTuple):
-        scope: Type[Scope] = Scope
-        view: Type = Any
-        context: Type = Any
+        scope: type[Scope] = Scope
+        manager: type = Any
+        view: type = Any
+        context: type = Any
+
+
+class LayoutRegistry(TypedRegistry):
+
+    @beartype
+    class Types(NamedTuple):
+        scope: type[Scope] = Scope
+        view: type = Any
+        context: type = Any
 
 
 def query_slot(econtext, name):
@@ -50,19 +48,19 @@ def query_slot(econtext, name):
     ui = econtext.get('ui', scope.get(UI))
 
     try:
-        manager = ui.slots.lookup(scope, view, context, name=name)
-        if manager.evaluate(view, context, scope=scope):
+        manager = ui.slots.fetch(scope, view, context, name=name)
+        if manager.__evaluate__(scope, view, context):
             return None
 
-        if isclass(manager.value):
-            manager = manager.value()
-        else:
-            manager = manager.value
+        if manager.__metadata__.isclass:
+            manager = manager()
 
-        slots = ui.subslots.match_grouped(scope, manager, view, context)
-        return manager(
-            scope, view, context, slots=slots.values()
-        )
+        subslots = [
+            subslot for subslot in
+            ui.subslots.match_grouped(scope, manager, view, context).values()
+            if not subslot.__evaluate__(scope, manager, view, context)
+        ]
+        return manager(scope, view, context, items=subslots)
 
     except LookupError:
         # No slot found. We don't render anything.
@@ -92,9 +90,9 @@ class UI(Installable):
 
     __provides__ = ['UI']
 
-    slots: ComponentRegistry = field(default_factory=SlotRegistry)
-    subslots: ComponentRegistry = field(default_factory=SubSlotRegistry)
-    layouts: ComponentRegistry = field(default_factory=LayoutRegistry)
+    slots: Registry = field(default_factory=SlotRegistry)
+    subslots: Registry = field(default_factory=SubSlotRegistry)
+    layouts: Registry = field(default_factory=LayoutRegistry)
     templates: Templates = field(default_factory=Templates)
     macros: Templates = field(default_factory=Templates)
     resources: Set[Group | Resource] = field(default_factory=set)

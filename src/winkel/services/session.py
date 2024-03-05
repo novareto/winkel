@@ -64,7 +64,7 @@ class HTTPSessions(Service):
         if new is True:
             sid = self.manager.generate_id()
 
-        session: Session = self.manager.session_factory(
+        session: HTTPSession = self.manager.session_factory(
             sid, self.manager.store, new=new
         )
 

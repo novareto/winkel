@@ -6,6 +6,7 @@ from winkel.auth import User, anonymous
 from winkel.services.flash import SessionMessages
 from actions import Actions
 from login import Login
+from winkel.utils import ondemand
 
 
 slots = SlotRegistry()
@@ -21,14 +22,14 @@ def default_layout(scope: Scope, view: Any, context: Any, name: str, content: st
 
 @slots.register(..., name='actions')
 @renderer(template='slots/actions', layout_name=None)
-def actions(scope: Scope, view: Any, context: Any, *, slots):
+def actions(scope: Scope, view: Any, context: Any, *, items):
     registry = scope.get(Actions)
     matching = registry.match_grouped(scope, view, context)
     evaluated = []
     for name, action in matching.items():
-        result = action.conditional_call(scope, view, context)
-        if result is not None:
-            evaluated.append((action, result))
+        if not action.__evaluate__(scope, view, context):
+            result = action(scope, view, context)
+            evaluated.append((action.__metadata__, result))
     return {
         "actions": evaluated,
         'view': view,
@@ -41,13 +42,11 @@ def actions(scope: Scope, view: Any, context: Any, *, slots):
 class AboveContent:
 
     @renderer(template='slots/above', layout_name=None)
-    def __call__(self, scope: Scope, view: Any, context: Any, *, slots):
-        items = []
-        for slot in slots:
-            result = slot.conditional_call(scope, self, view, context)
-            if result is not None:
-                items.append(result)
-        return {'items': items, 'view': view, 'context': context, 'manager': self}
+    def __call__(self, scope: Scope, view: Any, context: Any, *, items):
+        return {
+            'items': [item(scope, self, view, context) for item in items],
+            'view': view, 'context': context, 'manager': self
+        }
 
 
 @subslots.register({"manager": AboveContent}, name='messages')
@@ -58,13 +57,13 @@ def messages(scope: Scope, manager: AboveContent, view: Any, context: Any):
 
 
 @subslots.register({"manager": AboveContent}, name='identity')
-def identity(scope: Scope, manager: AboveContent, view: Any, context: Any):
-    who_am_i = scope.get(User)
+@ondemand
+def identity(who_am_i: User):
     if who_am_i is anonymous:
         return "<div class='container alert alert-secondary'>Not logged in.</div>"
     return f"<div class='container alert alert-info'>You are logged in as {who_am_i.id}</div>"
 
 
 @slots.register({"view": Login}, name='sneaky')
-def sneaky(scope: Scope, view: Login, context: Any, *, slots) -> str:
+def sneaky(scope: Scope, view: Login, context: Any, *, items) -> str:
     return "I show up only on the Login page."

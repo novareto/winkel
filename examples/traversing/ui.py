@@ -26,14 +26,9 @@ def default_layout(scope: Scope, view: Any, context: Any, name: str, content: st
 class AboveContent:
 
     @renderer(template='slots/above', layout_name=None)
-    def __call__(self, scope: Scope, view: Any, context: Any, *, slots):
-        items = []
-        for slot in slots:
-            result = slot.conditional_call(scope, self, view, context)
-            if result is not None:
-                items.append(result)
+    def __call__(self, scope: Scope, view: Any, context: Any, *, items):
         return {
-            'items': items,
+            'items': [item(scope, self, view, context) for item in items],
             'view': view,
             'context': context,
             'manager': self
