@@ -1,4 +1,6 @@
 import typing as t
+from types import FunctionType
+from functools import cache
 from inspect import _empty
 from contextlib import ExitStack
 from rodi import ActivationScope, Services, Dependency, Signature
@@ -6,6 +8,16 @@ from winkel.meta import Environ, WSGIEnvironWrapper
 
 
 T = t.TypeVar("T")
+
+
+@cache
+def method_dependencies(
+        method: FunctionType | type) -> tuple[tuple[str, Dependency], ...]:
+    sig = Signature.from_callable(method)
+    return tuple(
+        (key, Dependency(key, value.annotation))
+        for key, value in sig.parameters.items()
+    )
 
 
 class Scope(ActivationScope):
@@ -31,17 +43,10 @@ class Scope(ActivationScope):
         return key in self.scoped_services or key in self.provider
 
     def exec(self, method):
-        sig = Signature.from_callable(method)
-        params = {
-            key: Dependency(key, value.annotation)
-            for key, value in sig.parameters.items()
-        }
         fns = []
-
-        for key, param in params.items():
+        for key, param in method_dependencies(method):
             if param.annotation is _empty:
                 fns.append(self.get(key))
             else:
                 fns.append(self.get(param.annotation))
-
         return method(*fns)
