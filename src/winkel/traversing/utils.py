@@ -1,4 +1,5 @@
-from winkel.traversing import Application, Traverser
+from winkel.traversing import Application
+from winkel.traversing.traverser import Traversed
 from winkel.routing.router import expand_url_params
 
 

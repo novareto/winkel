@@ -7,18 +7,21 @@ from winkel.ui import UI
 from winkel.traversing import Application
 from winkel.templates import Templates
 from winkel import services
-import ui, views, login
+import ui, views, login, store, factories
 
 
 app = Application(
-    views=views.views|login.views
+    factories=factories.registry,
+    views=views.views | login.views
 )
+
+app.services.add_instance(store.stores)
 
 
 app.use(
     services.Transactional(),
     services.PostOffice(
-        path='/tmp/test.mail'
+        path='test.mail'
     ),
     services.SQLDatabase(
         url="sqlite:///database.db"

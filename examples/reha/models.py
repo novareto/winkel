@@ -1,10 +1,27 @@
 import typing as t
+import jsonschema_colander.types
 from sqlmodel import Field, SQLModel, Relationship
 from sqlalchemy import JSON, Column
 from pydantic import computed_field
 
 
-class Folder(SQLModel, table=True):
+class Model(SQLModel):
+
+    @classmethod
+    def get_schema(cls,
+                   exclude: t.Iterable[str] | None = None,
+                   include: t.Iterable[str] | None = None):
+        return jsonschema_colander.types.Object.from_json(
+            cls.model_json_schema(), config={
+                "": {
+                    "exclude": exclude,
+                    "include": include
+                },
+            }
+        )()
+
+
+class Folder(Model, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
 
@@ -16,7 +33,7 @@ class Folder(SQLModel, table=True):
         return len(self.documents)
 
 
-class Document(SQLModel, table=True):
+class Document(Model, table=True):
 
     class Config:
         arbitrary_types_allowed = True

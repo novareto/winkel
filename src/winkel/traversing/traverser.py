@@ -127,7 +127,7 @@ class Traverser(TypedRouters):
             # Continue to next path in list
             path_index += 1
         # No path is found
-        return []
+        raise LookupError('No path found.')
 
     def __or__(self, other: 'Traverser'):
         new: Traverser = super().__or__(other)

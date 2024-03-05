@@ -1,3 +1,21 @@
+from typing import NamedTuple
+
+
+class SchemaKey(NamedTuple):
+    store: str
+    schema: str
+    version: float
+
+    def __str__(self):
+        return f"{self.schema}.{self.version}@{self.store}"
+
+    @classmethod
+    def from_string(cls, value: str):
+        id, store = value.split("@", 1)
+        schema, version = id.split(".", 1)
+        return cls(store, schema, float(version))
+
+
 schema1 = {
   "$id": "https://example.com/movie.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -27,7 +45,7 @@ schema1 = {
       "items": {
         "type": "string"
       },
-      "additionalItems": false
+      "additionalItems": False
     }
   }
 }
@@ -67,9 +85,12 @@ schema2 = {
 }
 
 
-store: dict[float, dict] = dict()
-store[(1.0, 'schema1')] = schema1
-store[(1.2, 'schema2')] = schema1
+store: dict[tuple[str, float], dict] = dict()
+store[('schema1', 1.0)] = schema1
+store[('schema2', 1.2)] = schema2
 
-stores: dict[str, dict] = {}
-stores['reha'] = store
+class Stores(dict[str, dict]):
+    pass
+
+
+stores = Stores(reha=store)
