@@ -1,37 +1,30 @@
 import http_session_file
 import pathlib
+import vernacular
+import logging.config
 from fanstatic import Fanstatic
 from js.jquery import jquery
-from winkel import RoutingApplication, UI
-from winkel.auth import SessionAuthenticator
-from winkel.ui.slot import SlotExpr
-from winkel.templates import Templates, EXPRESSION_TYPES
+from winkel.ui import UI
+from winkel.routing import Application
+from winkel.templates import Templates
 from winkel.policies import NoAnonymous
-from winkel.services import Transactional, Session, Flash
-import register, login, views, actions, db, ui, folder, document, request
-import logging.config
-import vernacular
-from vernacular import translations, Translations
-from winkel.services.translation import TranslationService
+import register, login, views, actions, ui, folder, document, db
+from winkel.services import (
+    Transactional, HTTPSessions, Flash, SessionAuthenticator,
+    SQLDatabase, TranslationService
+)
 
-
-app = RoutingApplication()
-EXPRESSION_TYPES['slot'] = SlotExpr
+app = Application()
 
 app.services.register(actions.Actions, instance=actions.actions)
-app.router |= (
-        register.routes | login.routes | views.routes | folder.routes | document.routes
+app.router = (
+    register.routes | login.routes | views.routes | folder.routes | document.routes
 )
 
 vernacular.COMPILE = True
-i18Catalog = Translations()
-for translation in translations(pathlib.Path('translations')):
+i18Catalog = vernacular.Translations()
+for translation in vernacular.translations(pathlib.Path('translations')):
     i18Catalog.add(translation)
-
-
-@app.router.register('/test/error')
-def test2(scope):
-    raise NotImplementedError("Damn")
 
 
 app.register_handler('scope.init')(
@@ -43,9 +36,8 @@ app.register_handler('scope.init')(
 
 
 app.use(
-    request.Request(),
     Transactional(),
-    db.SQLDatabase(
+    SQLDatabase(
         url="sqlite:///database.db"
     ),
     TranslationService(
@@ -55,19 +47,20 @@ app.use(
     ),
     UI(
         slots=ui.slots,
+        subslots=ui.subslots,
         layouts=ui.layouts,
         templates=Templates('templates'),
         resources={jquery}
     ),
-    Session(
+    HTTPSessions(
         store=http_session_file.FileStore(
-            pathlib.Path('sessions'), 300
+            pathlib.Path('sessions'), 3000
         ),
         secret="secret",
         salt="salt",
         cookie_name="cookie_name",
         secure=False,
-        TTL=300
+        TTL=3000
     ),
     SessionAuthenticator(
         sources=[db.DBSource()],
@@ -87,7 +80,7 @@ logging.config.dictConfig({
     },
     'handlers': {
         'default': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'formatter': 'standard',
             'class': 'logging.StreamHandler',
             'stream': 'ext://sys.stdout',  # Default is stderr
@@ -107,5 +100,5 @@ logging.config.dictConfig({
     }
 })
 
-
+app.finalize()
 wsgi_app = Fanstatic(app)

@@ -51,14 +51,14 @@ class CORS(Configuration):
             # We intercept the preflight.
             # If a route was possible registered for OPTIONS,
             # this will override it.
-            Logger.debug('Cors policy crafting preflight response.')
+            logger.debug('Cors policy crafting preflight response.')
             origin = scope.environ.get(
                 'ORIGIN'
             )
             acr_method = scope.environ.get(
                 'ACCESS_CONTROL_REQUEST_METHOD'
             )
-            acr_headers = request.environ.get(
+            acr_headers = scope.environ.get(
                 'ACCESS_CONTROL_REQUEST_HEADERS'
             )
             return Response(200, headers=Headers(

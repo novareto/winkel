@@ -1,18 +1,16 @@
 import logging
-from rodi import Container
+from collections import defaultdict
+from functools import partial
 from dataclasses import dataclass, field
+from rodi import Container
 from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
-from winkel.router import Router, MatchedRoute, Params
 from winkel.scope import Scope
 from winkel.response import Response
 from winkel.service import Installable
 from winkel.datastructures import PriorityChain
 from winkel.meta import Environ, ExceptionInfo
-from collections import defaultdict
-from functools import partial
-from elementalist.registries import SignatureMapping
-from buckaroo import Registry as Trail
+from winkel import scoped
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +22,7 @@ class Mounting(Mapping):
         self[path] = app
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass(kw_only=True)
 class Eventful:
     events: dict = field(default_factory=partial(defaultdict, PriorityChain))
 
@@ -47,15 +45,22 @@ class Eventful:
                 hook(self, *args, **kwargs)
 
 
-@dataclass(kw_only=True, slots=True)
-class Application(Eventful, RootNode):
+@dataclass(kw_only=True)
+class Root(RootNode, Eventful):
 
     name: str = ''
     services: Container = field(default_factory=Container)
     mounts: Mounting = field(default_factory=Mounting)
 
     def __post_init__(self):
-        self.services.add_instance(self, Application)
+        self.services.add_instance(self, self.__class__)
+        self.services.add_scoped_by_factory(scoped.query)
+        self.services.add_scoped_by_factory(scoped.cookies)
+        self.services.add_scoped_by_factory(scoped.form_data)
+
+    def finalize(self):
+        # everything that needs doing before serving requests.
+        self.services.build_provider()
 
     def use(self, *components: Installable):
         for component in components:
@@ -83,50 +88,7 @@ class Application(Eventful, RootNode):
                         response = self.endpoint(scope)
                 except HTTPError as err:
                     response = Response(err.status, err.body)
-                except Exception as err:
-                    raise
+
                 scope.register(Response, response)
                 self.notify('scope.response', scope, response)
                 return response
-
-
-@dataclass(kw_only=True, slots=True)
-class RoutingApplication(Application):
-    router: Router = field(default_factory=Router)
-
-    def endpoint(self, scope: Scope) -> Response:
-        route: MatchedRoute | None = self.router.match(
-            scope.environ.path,
-            scope.environ.method
-        )
-        if route is None:
-            raise HTTPError(404)
-
-        scope.register(MatchedRoute, route)
-        scope.register(Params, route.params)
-        self.notify('route.found', scope, route)
-        return route(scope)
-
-
-@dataclass(kw_only=True, slots=True)
-class TraversingApplication(Application):
-    trail: Trail = field(default_factory=Trail)
-    views: SignatureMapping = field(default_factory=SignatureMapping)
-
-    def __post_init__(self):
-        self.services.add_instance(self, Application)
-        self.services.add_scoped(Params)
-
-    def endpoint(self, scope: Scope) -> Response:
-        leaf, view_name = self.trail.resolve(
-            self, scope.environ.path, scope, partial=True
-        )
-        try:
-            view = self.views.lookup(
-                scope, leaf, scope.environ.method, name=view_name)
-        except LookupError as err:
-            view = None
-        if view is None:
-            raise HTTPError(404)
-
-        return view.secure_call(scope, leaf, scope.environ.method)

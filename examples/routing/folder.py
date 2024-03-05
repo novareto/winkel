@@ -1,13 +1,14 @@
 import deform
 import jsonschema_colander.types
 from sqlmodel import Session
-from winkel.router import APIView, RouteStore, Params
+from winkel.routing import Application, APIView, Router, Params
 from winkel.services.flash import SessionMessages
-from winkel import Application, User, Response, FormData, html, renderer
+from winkel.meta import FormData
+from winkel import User, Response, html, renderer
 from models import Folder
 
 
-routes = RouteStore()
+routes = Router()
 
 
 folder_schema = jsonschema_colander.types.Object.from_json(
@@ -59,7 +60,7 @@ class CreateFolder(APIView):
         return Response.redirect(scope.environ.application_uri)
 
 
-@routes.register('/folders/{folder_id}', name="folder_view")
+@routes.register('/folders/<folder_id>', name="folder_view")
 @html
 @renderer(template='views/folder')
 def folder_view(scope):

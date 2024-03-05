@@ -1,8 +1,20 @@
-from winkel.router import RouteStore
-from winkel import Query, Application, Response, User, html, json, renderer
+from winkel.routing import Router
+from winkel.meta import Query, Cookies
+from winkel import Response, User, html, json, renderer
+from winkel.routing import Application
+from winkel.utils import ondemand
 
 
-routes = RouteStore()
+routes = Router()
+
+
+@routes.register('/test/ondemand')
+@html
+@ondemand
+def DI(user: User):
+    import html
+    return html.escape(str(user))
+
 
 
 @routes.register('/')
@@ -43,3 +55,8 @@ def some_pipe(handler):
 @renderer
 def filtered(scope):
     return "This is my filtered view"
+
+
+@routes.register('/test/error')
+def test2(scope):
+    raise NotImplementedError("Damn")

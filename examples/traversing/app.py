@@ -1,54 +1,42 @@
-from typing import Literal
-from winkel.response import Response
-from winkel import Application, TraversingApplication, Scope
-from request import Request
-from models import User, Folder, Document, Invoice
-from winkel.router import Params
+import pathlib
+from fanstatic import Fanstatic
+import http_session_file
+from js.jquery import jquery
+from winkel.services import Flash, HTTPSessions, SQLDatabase
+from winkel.traversing import Application
+from winkel.ui import UI
+from winkel.templates import Templates
+import factories, views, ui
 
 
-app = TraversingApplication()
-app.use(Request())
+app = Application()
+app.views |= views.routes
+app.factories |= factories.registry
 
+app.use(
+    SQLDatabase(
+        url="sqlite:///traversing.db"
+    ),
+    UI(
+        templates=Templates('templates'),
+        slots=ui.slots,
+        subslots=ui.subslots,
+        layouts=ui.layouts,
+        resources={jquery}
+    ),
+    HTTPSessions(
+        store=http_session_file.FileStore(
+            pathlib.Path('sessions'), 3000
+        ),
+        secret="secret",
+        salt="salt",
+        cookie_name="cookie_name",
+        secure=False,
+        TTL=3000
+    ),
+    Flash()
+)
 
-@app.trail.register(Application, '/users/{id}')
-def user_factory(parent: Application, scope: Scope, *, id: str) -> User:
-    params = scope.get(Params)
-    params['user_id'] = id
-    return User(parent, id)
+app.finalize()
+wsgi_app = Fanstatic(app)
 
-
-@app.trail.register(User, '/folders/{name}')
-def folder_factory(parent: User, scope: Scope, *, name: str) -> Folder:
-    params = scope.get(Params)
-    params['folder_name'] = name
-    return Folder(parent, name)
-
-
-@app.trail.register(Folder, '/docs/{id}')
-def document_factory(parent: User, scope: Scope, *, id: str) -> Document:
-    params = scope.get(Params)
-    params['document_id'] = id
-    return Document(parent, id)
-
-
-@app.trail.register(Folder, '/invoices/{id}')
-def invoice_factory(parent: User, scope: Scope, *, id: str) -> Invoice:
-    params = scope.get(Params)
-    params['invoice_id'] = id
-    return Invoice(parent, id)
-
-
-@app.views.register((Scope, User, Literal['GET']), name='')
-def user_index(scope, user, method):
-    params = scope.get(Params)
-    return Response(200, body=f"I am a user : {params}")
-
-
-@app.views.register((Scope, Folder, Literal['GET']), name='')
-def folder_index(scope, folder, method):
-    params = scope.get(Params)
-    return Response(200, body=f"I am a folder : {params}")
-
-
-
-wsgi_app = app

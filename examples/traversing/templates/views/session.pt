@@ -1,0 +1,4 @@
+<article>
+    <h2>Session : ${context.name}</h2>
+    <p class="muted">${context.scheduled_for}</p>
+</article>

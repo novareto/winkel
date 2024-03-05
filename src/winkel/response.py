@@ -32,7 +32,7 @@ class Response(BaseResponse):
     @classmethod
     def redirect(cls, location, code: HTTPCode = 303,
                  body: t.Optional[t.Iterable] = None,
-                 headers: t.Optional[Headers] = None) -> 'Response':
+                 headers: t.Optional[Headers] = None) -> BaseResponse:
         if code not in REDIRECT:
             raise ValueError(f"{code}: unknown redirection code.")
         if not headers:

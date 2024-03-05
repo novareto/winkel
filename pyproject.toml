@@ -23,10 +23,10 @@ dependencies = [
   "itsdangerous",
   "http_session",
   "transaction",
-  "elementalist",
   "vernacular",
   "content-negotiation",
-  "buckaroo"
+  "sanic_routing",
+  "imurl"
 ]
 
 [tool.setuptools.packages.find]

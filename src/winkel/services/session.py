@@ -16,7 +16,7 @@ from winkel.meta import HTTPSession
 logger = logging.getLogger(__name__)
 
 
-class Session(Service):
+class HTTPSessions(Service):
     store: Store
     secret: str
     samesite: SameSite = SameSite.lax
@@ -64,7 +64,7 @@ class Session(Service):
         if new is True:
             sid = self.manager.generate_id()
 
-        session: Session = self.manager.session_factory(
+        session: HTTPSession = self.manager.session_factory(
             sid, self.manager.store, new=new
         )
 
