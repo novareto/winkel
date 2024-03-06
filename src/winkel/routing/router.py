@@ -124,11 +124,11 @@ class Router(BaseRouter):
     DEFAULT_METHOD = "GET"
     ALLOWED_METHODS = METHODS
 
-    def get(self, path, method: HTTPMethod | None = None):
+    def get(self, path, method: HTTPMethod | None = None, extra: dict | None = None):
         if method is None:
             method = self.DEFAULT_METHOD
         try:
-            route, handler, params = self.resolve(path, method=method)
+            route, handler, params = self.resolve(path, method=method, extra=extra)
             return MatchedRoute(route, handler, Params(params))
         except NotFound:
             return None
