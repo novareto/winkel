@@ -6,9 +6,11 @@ from winkel import Response, User, html, json, renderer
 from winkel.response import Response
 from winkel.traversing.traverser import ViewRegistry
 from winkel.traversing.utils import url_for
+from winkel.utils import wildstr
 from form import Form, trigger
 from models import Folder, Document
 from store import Stores, SchemaKey
+
 
 views = ViewRegistry()
 
@@ -26,6 +28,7 @@ def root_index(scope, application):
         'url_for': url_for(scope, application)
     }
 
+
 @views.register(Folder, '/', name="view")
 @html
 @renderer(template='views/folder')
@@ -37,15 +40,6 @@ def folder_index(scope, folder):
         'context': folder,
         'documents': documents,
         'url_for': url_for(scope, folder)
-    }
-
-@views.register(Document, '/', name="view")
-@html
-@renderer(template='views/document')
-def folder_index(scope, document):
-    return {
-        'context': document,
-        'url_for': url_for(scope, document)
     }
 
 
@@ -76,6 +70,7 @@ def deferred_choices_widget(node, kw):
         choices.append((SchemaKey("reha", *key), schema['description']))
     return deform.widget.SelectWidget(values=choices)
 
+
 @views.register(Folder, '/create_document', name='create_document')
 class CreateDocument(Form):
 
@@ -94,3 +89,19 @@ class CreateDocument(Form):
             )
         )
         return Response.redirect(scope.environ.application_uri)
+
+
+@views.register(
+    Document, '/', name="view",
+    requirements={"type": wildstr('schema2.1.2*')})
+@html
+def schema2_document_index(scope, document):
+    return "I use a schema2"
+
+
+@views.register(
+    Document, '/', name="view",
+    requirements={"type": 'schema1.1.0@reha'})
+@html
+def schema1_document_index(scope, document):
+    return "I use a schema1"

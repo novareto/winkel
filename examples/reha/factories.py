@@ -1,6 +1,7 @@
 from sqlmodel import Session as SQLSession, select
 from winkel.traversing import Application
 from winkel.scope import Scope
+from winkel.routing import Extra
 from winkel.traversing import Traverser
 from models import Folder, Document
 
@@ -28,5 +29,7 @@ def document_factory(
         Document.id == document_id,
         Document.folder_id == parent.id
     )
-    course = sqlsession.exec(query).one_or_none()
-    return course
+    document = sqlsession.exec(query).one_or_none()
+    extra = scope.get(Extra)
+    extra["type"] = document.type
+    return document
