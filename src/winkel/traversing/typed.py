@@ -31,9 +31,9 @@ class TypedRouters(TypedValue[t.Any, Router], defaultdict):
             return value
         return routing
 
-    def match(self, context: t.Any, path: str, method: str):
+    def match(self, context: t.Any, path: str, method: str, extra: dict | None = None):
         for router in self.lookup(context.__class__):
-            matched: MatchedRoute | None = router.get(path, method)
+            matched: MatchedRoute | None = router.get(path, method, extra=extra)
             if matched is not None:
                 return matched
 
