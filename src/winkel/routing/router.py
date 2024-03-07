@@ -18,6 +18,10 @@ class Params(dict):
     pass
 
 
+class Extra(dict):
+    pass
+
+
 class APIView:
     pass
 
@@ -120,15 +124,21 @@ def expand_url_params(path: str, params: Sequence, kwargs):
         path = re.sub(replacement_regex, supplied_param, path)
     return path
 
+
 class Router(BaseRouter):
     DEFAULT_METHOD = "GET"
     ALLOWED_METHODS = METHODS
 
-    def get(self, path, method: HTTPMethod | None = None, extra: dict | None = None):
+    def get(self,
+            path: str,
+            method: HTTPMethod | None = None,
+            extra: dict | None = None):
         if method is None:
             method = self.DEFAULT_METHOD
         try:
-            route, handler, params = self.resolve(path, method=method, extra=extra)
+            route, handler, params = self.resolve(
+                path, method=method, extra=extra
+            )
             return MatchedRoute(route, handler, Params(params))
         except NotFound:
             return None

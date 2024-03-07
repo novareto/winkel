@@ -81,12 +81,14 @@ class Traverser(TypedRouters):
             for matcher in self.lookup(root.__class__):
                 found = matcher.get(stub)
                 if found:
-                    resolved = found.handler(stub, root, context, **found.params)
-                    resolved = Traversed(resolved, parent=root, route=found.route, path=stub)
+                    resolved = found.handler(
+                        stub, root, context, **found.params)
+                    resolved = Traversed(
+                        resolved, parent=root, route=found.route, path=stub)
                     if not branch:
                         return resolved, ''
-                    else:
-                        return self.traverse(resolved, branch, context=context, partial=partial)
+                    return self.traverse(
+                        resolved, branch, context=context, partial=partial)
         if partial:
             return root, path
         raise LookupError()

@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from horseman.exceptions import HTTPError
 from winkel.app import Root
 from winkel.scope import Scope
-from winkel.routing import MatchedRoute, Params
+from winkel.routing import MatchedRoute, Params, Extra
 from winkel.response import Response
 from winkel.traversing.traverser import Traverser, ViewRegistry
 
@@ -16,6 +16,7 @@ class Application(Root):
         super().__post_init__()
         self.services.add_instance(self.views, ViewRegistry)
         self.services.add_scoped(Params)
+        self.services.add_scoped(Extra)
 
     def finalize(self):
         # everything that needs doing before serving requests.
@@ -29,7 +30,14 @@ class Application(Root):
         )
         if not view_path.startswith('/'):
             view_path = f'/{view_path}'
-        view = self.views.match(leaf, view_path, scope.environ.method)
+
+        extra = scope.get(Extra)
+        view = self.views.match(
+            leaf,
+            view_path,
+            scope.environ.method,
+            extra=extra
+        )
         if view is None:
             raise HTTPError(404)
 
