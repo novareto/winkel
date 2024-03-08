@@ -1,6 +1,7 @@
 import deform
 import jsonschema_colander.types
 from sqlmodel import Session
+from winkel.form import Form, trigger
 from winkel.routing import Application, APIView, Router, Params
 from winkel.services.flash import SessionMessages
 from winkel.meta import FormData
@@ -19,38 +20,17 @@ folder_schema = jsonschema_colander.types.Object.from_json(
     }
 )
 
-def folder_creation_form(scope):
-    schema = folder_schema().bind(scope=scope)
-    process_btn = deform.form.Button(name='process', title="Process")
-    return deform.form.Form(schema, buttons=(process_btn,))
-
 
 @routes.register('/folders/new', name="folder_create")
-class CreateFolder(APIView):
+class CreateFolder(Form):
 
-    @html
-    @renderer(template='form/default')
-    def GET(self, scope):
-        form = folder_creation_form(scope)
-        return {
-            "rendered_form": form.render()
-        }
+    def get_schema(self, scope, *, context=None):
+        return folder_schema()
 
-    @html
-    @renderer(template='form/default')
-    def POST(self, scope):
-        data = scope.get(FormData)
-        if ('process', 'process') not in data.form:
-            raise NotImplementedError('No action found.')
-
-        try:
-            form = folder_creation_form(scope)
-            appstruct = form.validate(data.form)
-        except deform.exception.ValidationFailure as e:
-            return {
-                "rendered_form": e.render()
-            }
-
+    @trigger('add', 'Add new folder')
+    def add(self, scope, data, *, context):
+        form = self.get_form(scope, context=context)
+        appstruct = form.validate(data)
         sqlsession = scope.get(Session)
         user = scope.get(User)
         sqlsession.add(Folder(author_id=user.id, **appstruct))

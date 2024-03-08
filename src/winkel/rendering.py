@@ -25,7 +25,7 @@ def renderer(wrapped=None, *,
                 'ui': ui,
                 'macros': ui.macros,
                 'view': instance or wrapped,
-                'context': object(),
+                'context': kwargs.get('context', object()),
             }
 
         if template is not None:
@@ -39,8 +39,12 @@ def renderer(wrapped=None, *,
 
             namespace |= content
 
-            translator: Translator | None = scope.get(Translator, default=None)
-            locale: str | None = scope.get(Locale, default=None)
+            translator: Translator | None = scope.get(
+                Translator, default=None
+            )
+            locale: str | None = scope.get(
+                Locale, default=None
+            )
             rendered = tpl.render(
                 **namespace,
                 translate=translator and translator.translate or None,
