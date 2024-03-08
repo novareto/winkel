@@ -1,7 +1,5 @@
 import fnmatch
 from typing import Any
-from functools import wraps
-from winkel.scope import Scope
 
 
 class wildstr:
@@ -28,10 +26,3 @@ class value:
 
     def match(self, other: str):
         return self.value == other
-
-
-def ondemand(func):
-    @wraps(func)
-    def dispatch(scope: Scope, *args, **kwargs):
-        return scope.exec(func)
-    return dispatch

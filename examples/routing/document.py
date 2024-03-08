@@ -78,5 +78,5 @@ def document_view(scope):
     document = sqlsession.get(Document, params['document_id'])
     return {
         "document": document,
-        'url_for': application.router.url_for
+        'path_for': application.router.path_for
     }

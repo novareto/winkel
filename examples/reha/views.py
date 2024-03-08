@@ -5,8 +5,8 @@ from sqlmodel import Session as SQLSession, select
 from winkel import Response, User, html, json, renderer
 from winkel.response import Response
 from winkel.traversing.traverser import ViewRegistry
-from winkel.traversing.utils import url_for
-from winkel.utils import wildstr, value
+from winkel.traversing.utils import path_for
+from winkel import matchers
 from form import Form, trigger
 from models import Folder, Document
 from store import Stores, SchemaKey
@@ -25,7 +25,7 @@ def root_index(scope, application):
     return {
         'context': application,
         'folders': folders,
-        'url_for': url_for(scope, application)
+        'path_for': path_for(scope, application)
     }
 
 
@@ -39,7 +39,7 @@ def folder_index(scope, folder):
     return {
         'context': folder,
         'documents': documents,
-        'url_for': url_for(scope, folder)
+        'path_for': path_for(scope, folder)
     }
 
 
@@ -93,7 +93,7 @@ class CreateDocument(Form):
 
 @views.register(
     Document, '/', name="view",
-    requirements={"type": wildstr('schema2.1.2*')})
+    requirements={"type": matchers.wildstr('schema2.1.2*')})
 @html
 def schema2_document_index(scope, document):
     return f"I use a schema2: {document.type}"
@@ -102,7 +102,7 @@ def schema2_document_index(scope, document):
 
 @views.register(
     Document, '/', name="view",
-    requirements={"type": value('schema1.1.0@reha')})
+    requirements={"type": matchers.value('schema1.1.0@reha')})
 @html
 def schema1_document_index(scope, document):
     return f"I use a schema1: {document.type}"

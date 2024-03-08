@@ -93,7 +93,7 @@ class Router(BaseRouter):
             return value
         return routing
 
-    def url_for(self, name: str, **params):
+    def path_for(self, name: str, **params):
         route_url = self.get_by_name(name)
         if route_url is not None:
             path, _ = route_url.resolve(params)

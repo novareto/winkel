@@ -5,7 +5,7 @@
         <a href="${scope.environ.application_uri}">Home</a>
       </li>
       <li class="breadcrumb-item">
-        <a href="${url_for('folder_view', folder_id=document.folder_id)}">
+        <a href="${path_for('folder_view', folder_id=document.folder_id)}">
           ${document.folder.name}
         </a>
       </li>

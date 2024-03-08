@@ -5,7 +5,7 @@ from winkel.traversing import Application
 from winkel.traversing.traverser import Traversed
 from winkel import Response, html, renderer
 from winkel.traversing.traverser import ViewRegistry
-from winkel.traversing.utils import url_for
+from winkel.traversing.utils import path_for
 from models import Company, Course, Session
 from form import Form, trigger
 
@@ -23,7 +23,7 @@ def root_index(scope, application):
     return {
         'context': application,
         'companies': companies,
-        'url_for': url_for(scope, application)
+        'path_for': path_for(scope, application)
     }
 
 
@@ -33,7 +33,7 @@ def root_index(scope, application):
 def company_index(scope, company):
     return {
         'context': company,
-        'url_for': url_for(scope, company)
+        'path_for': path_for(scope, company)
     }
 
 
@@ -43,7 +43,7 @@ def company_index(scope, company):
 def course_index(scope, course):
     return {
         'context': course,
-        'url_for': url_for(scope, course)
+        'path_for': path_for(scope, course)
     }
 
 @routes.register(Session, '/', name="view")

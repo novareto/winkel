@@ -70,5 +70,5 @@ def folder_view(scope):
     folder = sqlsession.get(Folder, params['folder_id'])
     return {
         "folder": folder,
-        'url_for': application.router.url_for
+        'path_for': application.router.path_for
     }

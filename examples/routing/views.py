@@ -2,7 +2,7 @@ from winkel.routing import Router
 from winkel.meta import Query, Cookies
 from winkel import Response, User, html, json, renderer
 from winkel.routing import Application
-from winkel.utils import ondemand
+from winkel.scope import ondemand
 from winkel.services import Mailman
 from winkel.response import Response
 
@@ -26,7 +26,7 @@ def index(scope):
     application = scope.get(Application)
     return {
         'user': scope.get(User),
-        'url_for': application.router.url_for
+        'path_for': application.router.path_for
     }
 
 

@@ -1,10 +1,9 @@
 from typing import Any
 from winkel.ui import SlotRegistry, LayoutRegistry, SubSlotRegistry
 from winkel.rendering import renderer
-from winkel.scope import Scope
+from winkel.scope import Scope, ondemand
 from winkel.auth import User, anonymous
 from winkel.services.flash import SessionMessages
-from winkel.utils import ondemand
 
 
 slots = SlotRegistry()
