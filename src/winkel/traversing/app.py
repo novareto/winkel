@@ -49,4 +49,4 @@ class Application(Root):
         params |= view.params
 
         scope.register(MatchedRoute, view)
-        return view.routed(scope, leaf)
+        return view.routed(scope, context=leaf)

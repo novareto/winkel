@@ -26,7 +26,11 @@ dependencies = [
   "vernacular",
   "content-negotiation",
   "autorouting",
-  "plum-dispatch"
+  "plum-dispatch",
+  # following the soon to be excised from the package
+  "deform",
+  "colander",
+  "func_annotator"
 ]
 
 [tool.setuptools.packages.find]

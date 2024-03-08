@@ -7,7 +7,7 @@ from winkel.response import Response
 from winkel.traversing.traverser import ViewRegistry
 from winkel.traversing.utils import path_for
 from winkel import matchers
-from form import Form, trigger
+from winkel.form import Form, trigger
 from models import Folder, Document
 from store import Stores, SchemaKey
 
@@ -49,7 +49,7 @@ class CreateFolder(Form):
     schema = Folder.get_schema(exclude=("id",))
 
     @trigger('save', 'Create new folder')
-    def save(self, scope, data, context):
+    def save(self, scope, data, *, context):
         form = self.get_form(scope, context)
         appstruct = form.validate(data)
         sqlsession = scope.get(SQLSession)
@@ -78,7 +78,7 @@ class CreateDocument(Form):
     schema['type'].widget = deferred_choices_widget
 
     @trigger('save', 'Create new document')
-    def save(self, scope, data, context):
+    def save(self, scope, data, *, context):
         form = self.get_form(scope, context)
         appstruct = form.validate(data)
         sqlsession = scope.get(SQLSession)
@@ -95,7 +95,7 @@ class CreateDocument(Form):
     Document, '/', name="view",
     requirements={"type": matchers.wildstr('schema2.1.2*')})
 @html
-def schema2_document_index(scope, document):
+def schema2_document_index(scope, *, context: Document):
     return f"I use a schema2: {document.type}"
 
 
@@ -104,5 +104,5 @@ def schema2_document_index(scope, document):
     Document, '/', name="view",
     requirements={"type": matchers.value('schema1.1.0@reha')})
 @html
-def schema1_document_index(scope, document):
+def schema1_document_index(scope, context: Document):
     return f"I use a schema1: {document.type}"
