@@ -45,3 +45,8 @@ class Document(Model, table=True):
     folder_id: int = Field(foreign_key="folder.id")
 
     folder: Folder = Relationship(back_populates="documents")
+
+    @computed_field
+    @property
+    def name(self) -> int:
+        return self.title

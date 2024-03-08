@@ -7,12 +7,12 @@ from winkel.ui import UI
 from winkel.traversing import Application
 from winkel.templates import Templates
 from winkel import services
-import ui, views, login, store, factories
+import ui, views, store, factories
 
 
 app = Application(
     factories=factories.registry,
-    views=views.views | login.views
+    views=views.views
 )
 
 app.services.add_instance(store.stores)

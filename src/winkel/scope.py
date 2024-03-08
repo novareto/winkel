@@ -1,6 +1,6 @@
 import typing as t
 from types import FunctionType
-from functools import cache
+from functools import cache, wraps
 from inspect import _empty
 from contextlib import ExitStack
 from rodi import ActivationScope, Services, Dependency, Signature
@@ -27,7 +27,7 @@ class Scope(ActivationScope):
                  environ: Environ,
                  stack: ExitStack | None = None,
                  provider: Services | None = None,
-                 scoped_services: t.Dict[t.Type[T] | str, T] | None = None):
+                 scoped_services: t.Dict[type[T] | str, T] | None = None):
         self.environ = WSGIEnvironWrapper(environ)
         self.provider = provider or Services()
         if scoped_services is None:
@@ -36,7 +36,7 @@ class Scope(ActivationScope):
         self.scoped_services = scoped_services
         self.stack = stack or ExitStack()
 
-    def register(self, key: t.Type[T] | str, value: T):
+    def register(self, key: type[T] | str, value: T):
         self.scoped_services[key] = value
 
     def __contains__(self, key):
@@ -50,3 +50,10 @@ class Scope(ActivationScope):
             else:
                 fns.append(self.get(param.annotation))
         return method(*fns)
+
+
+def ondemand(func):
+    @wraps(func)
+    def dispatch(scope: Scope, *args, **kwargs):
+        return scope.exec(func)
+    return dispatch

@@ -1,7 +1,8 @@
 import typing as t
 from collections import defaultdict
+from autorouting import MatchedRoute
 from winkel.pipeline import wrapper
-from winkel.routing.router import Router, MatchedRoute, HTTPMethods, get_routables
+from winkel.routing.router import Router, HTTPMethods, get_routables
 from winkel.datastructures import TypedValue
 
 
@@ -14,8 +15,8 @@ class TypedRouters(TypedValue[t.Any, Router], defaultdict):
         for router in self.values():
             router.finalize()
 
-    def add(self, root: t.Type[t.Any], path: str, factory: t.Callable, **kwargs):
-        return self[root].add(path, factory, **kwargs)
+    def add(self, root: t.Type[t.Any], path: str, method: str, factory: t.Callable, **kwargs):
+        return self[root].add(path, method, factory, **kwargs)
 
     def register(self,
                  root: t.Type,
@@ -27,7 +28,8 @@ class TypedRouters(TypedValue[t.Any, Router], defaultdict):
             for endpoint, verbs in get_routables(value, methods):
                 if pipeline:
                     endpoint = wrapper(pipeline, endpoint)
-                self.add(root, path, endpoint, methods=verbs, **kwargs)
+                for verb in verbs:
+                    self.add(root, path, verb, endpoint, **kwargs)
             return value
         return routing
 
@@ -39,9 +41,10 @@ class TypedRouters(TypedValue[t.Any, Router], defaultdict):
 
     def route_for(self, context: t.Any, name: str, **params):
         for router in self.lookup(context.__class__):
-            if name in router.name_index:
-                return str(router.url_for(name, **params))
-        raise LookupError(f'Could not find route {name!r} for {context!r}')
+            route_url = router.get_by_name(name)
+            if route_url is not None:
+                path, _ = route_url.resolve(params)
+                return path
 
     def __or__(self, other: 'TypedRouters'):
         new = TypedRouters()

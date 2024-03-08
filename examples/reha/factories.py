@@ -9,9 +9,9 @@ from models import Folder, Document
 registry = Traverser()
 
 
-@registry.register(Application, '/folders/<folder_id>')
+@registry.register(Application, '/folders/{folder_id}')
 def folder_factory(
-        path: str, parent: Application, scope: Scope, *,
+        scope: Scope, parent: Application,  *,
         folder_id: str) -> Folder:
 
     sqlsession = scope.get(SQLSession)
@@ -19,9 +19,9 @@ def folder_factory(
     return folder
 
 
-@registry.register(Folder, '/documents/<document_id>')
+@registry.register(Folder, '/documents/{document_id}')
 def document_factory(
-        path: str, parent: Folder, scope: Scope, *,
+        scope: Scope, parent: Folder, *,
         document_id: str) -> Document:
 
     sqlsession = scope.get(SQLSession)

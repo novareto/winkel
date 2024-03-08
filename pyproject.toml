@@ -25,9 +25,12 @@ dependencies = [
   "transaction",
   "vernacular",
   "content-negotiation",
-  "sanic_routing",
-  "imurl",
-  "plum-dispatch"
+  "autorouting",
+  "plum-dispatch",
+  # following the soon to be excised from the package
+  "deform",
+  "colander",
+  "func_annotator"
 ]
 
 [tool.setuptools.packages.find]

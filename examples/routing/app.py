@@ -38,7 +38,7 @@ app.register_handler('scope.init')(
 app.use(
     Transactional(),
     PostOffice(
-        path='/tmp/test.mail'
+        path='test.mail'
     ),
     SQLDatabase(
         url="sqlite:///database.db"

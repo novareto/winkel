@@ -1,9 +1,10 @@
 import deform
 import jsonschema_colander.types
 from sqlmodel import Session
-from winkel.routing import Application, APIView, Router, Params
+from winkel.form import Form, trigger
+from winkel.routing import Application, Router, Params
 from winkel.services.flash import SessionMessages
-from winkel import User, Response, FormData, html, renderer
+from winkel import User, Response, html, renderer
 from models import Document
 
 
@@ -19,38 +20,19 @@ document_schema = jsonschema_colander.types.Object.from_json(
     }
 )
 
-def document_creation_form(scope):
-    schema = document_schema().bind(scope=scope)
-    schema['text'].widget = deform.widget.TextAreaWidget()
-    process_btn = deform.form.Button(name='process', title="Process")
-    return deform.form.Form(schema, buttons=(process_btn,))
 
+@routes.register('/folders/{folder_id}/new', name="document_create")
+class CreateDocument(Form):
 
-@routes.register('/folders/<folder_id>/new', name="document_create")
-class CreateDocument(APIView):
+    def get_schema(self, scope, *, context=None):
+        schema = document_schema()
+        schema['text'].widget = deform.widget.TextAreaWidget()
+        return schema
 
-    @html
-    @renderer(template='form/default')
-    def GET(self, scope):
-        form = document_creation_form(scope)
-        return {
-            "rendered_form": form.render()
-        }
-
-    @html
-    @renderer(template='form/default')
-    def POST(self, scope):
-        data = scope.get(FormData)
-        if ('process', 'process') not in data.form:
-            raise NotImplementedError('No action found.')
-
-        try:
-            form = document_creation_form(scope)
-            appstruct = form.validate(data.form)
-        except deform.exception.ValidationFailure as e:
-            return {
-                "rendered_form": e.render()
-            }
+    @trigger('add', 'Add new document')
+    def add(self, scope, data, *, context):
+        form = self.get_form(scope, context=context)
+        appstruct = form.validate(data)
 
         sqlsession = scope.get(Session)
         params = scope.get(Params)
@@ -68,7 +50,7 @@ class CreateDocument(APIView):
 
 
 @routes.register(
-    '/folders/<folder_id>/browse/<document_id>', name="document_view")
+    '/folders/{folder_id}/browse/{document_id}', name="document_view")
 @html
 @renderer(template='views/document')
 def document_view(scope):
@@ -78,5 +60,5 @@ def document_view(scope):
     document = sqlsession.get(Document, params['document_id'])
     return {
         "document": document,
-        'url_for': application.router.url_for
+        'path_for': application.router.path_for
     }

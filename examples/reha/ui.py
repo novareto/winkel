@@ -1,10 +1,10 @@
 from typing import Any
+from collections import deque
 from winkel.ui import SlotRegistry, LayoutRegistry, SubSlotRegistry
+from winkel.traversing.traverser import Traversed
 from winkel.rendering import renderer
 from winkel.scope import Scope
-from winkel.auth import User, anonymous
 from winkel.services.flash import SessionMessages
-from winkel.utils import ondemand
 
 
 slots = SlotRegistry()
@@ -34,4 +34,24 @@ def messages(scope: Scope, manager: AboveContent, view: Any, context: Any):
     flash = scope.get(SessionMessages)
     return {
         'messages': list(flash)
+    }
+
+
+@subslots.register({'manager': AboveContent}, name='crumbs')
+@renderer(template='slots/breadcrumbs', layout_name=None)
+def breadcrumbs(scope: Scope, manager: AboveContent, view: Any, context: Any):
+    node = context
+    parents = deque()
+    while node is not None:
+        if type(node) is Traversed:
+            parents.appendleft((node.__path__, node))
+            node = node.__parent__
+        else:
+            node = None
+
+    return {
+        'crumbs': parents,
+        'view': view,
+        'context': context,
+        'manager': manager
     }

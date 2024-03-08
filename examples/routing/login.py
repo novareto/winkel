@@ -1,9 +1,9 @@
 import colander
 import deform
-from winkel.routing import APIView, Router
+from winkel.routing import Router
 from winkel.services.flash import SessionMessages
-from winkel.meta import FormData
-from winkel import html, renderer, Response, Authenticator
+from winkel.form import Form, trigger
+from winkel import Response, Authenticator
 
 
 routes = Router()
@@ -23,38 +23,16 @@ class LoginSchema(colander.Schema):
     )
 
 
-def login_form(scope):
-    schema = LoginSchema().bind(scope=scope)
-    process_btn = deform.form.Button(name='process', title="Process")
-    return deform.form.Form(schema, buttons=(process_btn,))
-
-
 @routes.register('/login')
-class Login(APIView):
+class Login(Form):
 
-    @html
-    @renderer(template='form/default')
-    def GET(self, scope):
-        form = login_form(scope)
-        return {
-            "rendered_form": form.render()
-        }
+    def get_schema(self, scope, *, context=None):
+        return LoginSchema()
 
-    @html
-    @renderer(template='form/default')
-    def POST(self, scope):
-        data = scope.get(FormData)
-        if ('process', 'process') not in data.form:
-            raise NotImplementedError('No action found.')
-
-        try:
-            form = login_form(scope)
-            appstruct = form.validate(data.form)
-        except deform.exception.ValidationFailure as e:
-            return {
-                "rendered_form": e.render()
-            }
-
+    @trigger('login', 'Login')
+    def save(self, scope, data, *, context):
+        form = self.get_form(scope, context=context)
+        appstruct = form.validate(data)
         authenticator = scope.get(Authenticator)
         user = authenticator.from_credentials(scope, appstruct)
 
@@ -66,9 +44,7 @@ class Login(APIView):
 
         # Login failed.
         flash.add('Login failed.', type="danger")
-        return {
-            "rendered_form": form.render()
-        }
+        return form.render()
 
 
 @routes.register('/logout')

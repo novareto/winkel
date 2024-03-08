@@ -44,8 +44,7 @@ schema1 = {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "additionalItems": False
+      }
     }
   }
 }
@@ -88,6 +87,7 @@ schema2 = {
 store: dict[tuple[str, float], dict] = dict()
 store[('schema1', 1.0)] = schema1
 store[('schema2', 1.2)] = schema2
+
 
 class Stores(dict[str, dict]):
     pass
