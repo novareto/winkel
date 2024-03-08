@@ -1,3 +1,4 @@
+from orjson import loads, dumps
 from typing import Tuple, Type
 from functools import cached_property
 from winkel.response import Response
@@ -20,7 +21,12 @@ class SQLDatabase(Service):
     @computed_field
     @cached_property
     def engine(self) -> Engine:
-        engine = create_engine(self.url, echo=self.echo)
+        engine = create_engine(
+            self.url,
+            echo=self.echo,
+            json_serializer=dumps,
+            json_deserializer=loads
+        )
         for registry in self.models_registries:
             registry.metadata.create_all(engine)
         return engine

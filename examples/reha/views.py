@@ -1,12 +1,16 @@
 import colander
 import deform
+import orjson
+import jsonschema_colander.types
+from sqlmodel import Session as SQLSession, select, update
 from winkel.traversing import Application
-from sqlmodel import Session as SQLSession, select
+from winkel.traversing.utils import path_for
 from winkel import Response, html, renderer
 from winkel.traversing.traverser import ViewRegistry
 from winkel.traversing.utils import path_for
 from winkel import matchers
 from winkel.form import Form, trigger
+
 from models import Folder, Document
 from store import Stores, SchemaKey
 
@@ -95,18 +99,41 @@ class CreateDocument(Form):
         return Response.redirect(scope.environ.application_uri)
 
 
+@views.register(Document, '/edit', name="edit")
+class EditDocument(Form):
+
+    def get_schema(self, scope, *, context):
+        stores = scope.get(Stores)
+        key = SchemaKey.from_string(context.type)
+        schema = stores[key.store].get((key.schema, key.version))
+        return jsonschema_colander.types.Object.from_json(schema)()
+
+    def get_initial_data(self, scope, *, context):
+        return context.content
+
+    @trigger('save', 'Update document')
+    def save(self, scope, data, *, context):
+        form = self.get_form(scope, context=context)
+        appstruct = form.validate(data)
+        sqlsession = scope.get(SQLSession)
+        context.content = appstruct
+        resolver = path_for(scope, context)
+        return Response.redirect(resolver(context, 'view'))
+
+
 @views.register(
     Document, '/', name="view",
     requirements={"type": matchers.wildstr('schema2.1.2*')})
 @html
+@renderer
 def schema2_document_index(scope, *, context: Document):
     return f"I use a schema2: {context.type}"
-
 
 
 @views.register(
     Document, '/', name="view",
     requirements={"type": matchers.value('schema1.1.0@reha')})
 @html
+@renderer
 def schema1_document_index(scope, context: Document):
     return f"I use a schema1: {context.type}"

@@ -43,6 +43,9 @@ class Form(APIView):
             ) for ann, func in triggers
         ]
 
+    def get_initial_data(self, scope, *, context=None):
+        return {}
+
     @abstractmethod
     def get_schema(self, scope, *, context=None) -> colander.Schema:
         pass
@@ -52,7 +55,12 @@ class Form(APIView):
             scope=scope,
             context=context
         )
-        return deform.form.Form(schema, buttons=self.buttons)
+        form = deform.form.Form(schema, buttons=self.buttons)
+        initial_data = self.get_initial_data(scope, context=context)
+        if initial_data:
+            appstruct = schema.deserialize(initial_data)
+            form.set_appstruct(appstruct)
+        return form
 
     @html
     @renderer
