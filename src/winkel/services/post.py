@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 class Mailman(list[Message]):
 
-    def create_message(self, origin, targets, subject, text, html=None):
+    @staticmethod
+    def create_message(origin, targets, subject, text, html=None):
         msg = MIMEMultipart("alternative")
         msg["From"] = origin
         msg["To"] = ','.join(targets)
@@ -70,5 +71,8 @@ class PostOffice(Service):
                 txn = scope.get(TransactionManager)
                 if txn.isDoomed():
                     return
+
             for message in mailman:
                 self.mailbox.add(message)
+        finally:
+            mailman.clear()
