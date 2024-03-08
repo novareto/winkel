@@ -1,10 +1,9 @@
 from winkel.routing import Router
-from winkel.meta import Query, Cookies
+from winkel.meta import Query
 from winkel import Response, User, html, json, renderer
 from winkel.routing import Application
 from winkel.scope import ondemand
 from winkel.services import Mailman
-from winkel.response import Response
 
 
 routes = Router()

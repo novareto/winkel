@@ -2,8 +2,7 @@ import colander
 import deform
 from winkel.traversing import Application
 from sqlmodel import Session as SQLSession, select
-from winkel import Response, User, html, json, renderer
-from winkel.response import Response
+from winkel import Response, html, renderer
 from winkel.traversing.traverser import ViewRegistry
 from winkel.traversing.utils import path_for
 from winkel import matchers
