@@ -5,12 +5,13 @@ from winkel.traversing.traverser import Traversed
 
 class PathFragment(str):
 
+    def __new__(cls, value: str):
+        return super().__new__(cls, str(value).strip('/'))
+
     def __truediv__(self, other: str):
         if not other or other == '/':
             return self
-        if self[-1] != '/':
-            return PathFragment('/'.join((self, other.lstrip('/'))))
-        return PathFragment('/'.join((self.rstrip('/'), other.lstrip('/'))))
+        return PathFragment('/'.join((self, other.lstrip('/'))))
 
 
 def path_for(scope, context):
