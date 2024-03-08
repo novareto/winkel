@@ -5,30 +5,12 @@ from winkel.traversing import Application
 from winkel.traversing.traverser import Traversed
 from winkel import Response, html, renderer
 from winkel.traversing.traverser import ViewRegistry
+from winkel.traversing.utils import url_for
 from models import Company, Course, Session
 from form import Form, trigger
 
 
 routes = ViewRegistry()
-
-
-def url_for(scope, context):
-    def resolve_url(target, name, **params):
-        root = scope.get(Application)
-        route_stub = root.views.route_for(target, name, **params)
-        if type(context) is Traversed:
-            root_stub = context.__path__
-        else:
-            root_stub = ''
-
-        if context.__class__ is not target.__class__:
-            path = root.factories.reverse(target.__class__, context.__class__)
-            route_url = RouteURL.from_path(path)
-            resolved = route_url.resolve(params, qstring=False)
-            return scope.environ.application_uri + root_stub + resolved + route_stub
-        else:
-            return scope.environ.application_uri + root_stub + route_stub
-    return resolve_url
 
 
 @routes.register(Application, '/', name="view")

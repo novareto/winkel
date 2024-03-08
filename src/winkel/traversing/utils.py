@@ -1,26 +1,30 @@
+from autorouting.url import RouteURL
 from winkel.traversing import Application
 from winkel.traversing.traverser import Traversed
-from winkel.routing.router import expand_url_params
 
 
 def url_for(scope, context):
     def resolve_url(target, name, **params):
         root = scope.get(Application)
-        route_stub = root.views.route_for(target, name, **params)
+
         if type(context) is Traversed:
-            root_stub = context.__path__
+            root_path = context.__path__
         else:
-            root_stub = ''
+            root_path = ''
 
-        if context.__class__ is target.__class__:
-            return scope.environ.application_uri + root_stub + route_stub
+        if context.__class__ is not target.__class__:
+            traversal_path = root.factories.reverse(
+                target.__class__,
+                context.__class__
+            )
+            factory_path, unmatched = RouteURL.from_path(
+                traversal_path
+            ).resolve(params, qstring=False)
+        else:
+            factory_path = ''
+            unmatched = {}
 
-        path = expand_url_params(
-            *root.factories.reverse(
-                target.__class__, context.__class__
-            ),
-            params
-        )
-        return scope.environ.application_uri + root_stub + path + route_stub
+        view_path = root.views.route_for(target, name, **unmatched)
+        return scope.environ.application_uri + root_path + factory_path + view_path
 
     return resolve_url

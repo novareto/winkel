@@ -6,7 +6,7 @@ from winkel import Response, User, html, json, renderer
 from winkel.response import Response
 from winkel.traversing.traverser import ViewRegistry
 from winkel.traversing.utils import url_for
-from winkel.utils import wildstr
+from winkel.utils import wildstr, value
 from form import Form, trigger
 from models import Folder, Document
 from store import Stores, SchemaKey
@@ -96,12 +96,13 @@ class CreateDocument(Form):
     requirements={"type": wildstr('schema2.1.2*')})
 @html
 def schema2_document_index(scope, document):
-    return "I use a schema2"
+    return f"I use a schema2: {document.type}"
+
 
 
 @views.register(
     Document, '/', name="view",
-    requirements={"type": 'schema1.1.0@reha'})
+    requirements={"type": value('schema1.1.0@reha')})
 @html
 def schema1_document_index(scope, document):
-    return "I use a schema1"
+    return f"I use a schema1: {document.type}"

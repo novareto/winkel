@@ -43,7 +43,8 @@ class TypedRouters(TypedValue[t.Any, Router], defaultdict):
         for router in self.lookup(context.__class__):
             route_url = router.get_by_name(name)
             if route_url is not None:
-                return route_url.resolve(params)
+                path, _ = route_url.resolve(params)
+                return path
 
     def __or__(self, other: 'TypedRouters'):
         new = TypedRouters()
