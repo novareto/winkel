@@ -18,39 +18,40 @@ views = ViewRegistry()
 @views.register(Application, '/', name="view")
 @html
 @renderer(template='views/index')
-def root_index(scope, application):
+def root_index(scope, *, context: Application):
     sqlsession = scope.get(SQLSession)
     query = select(Folder)
     folders = sqlsession.exec(query).all()
     return {
-        'context': application,
+        'context': context,
         'folders': folders,
-        'path_for': path_for(scope, application)
+        'path_for': path_for(scope, context)
     }
 
 
 @views.register(Folder, '/', name="view")
 @html
 @renderer(template='views/folder')
-def folder_index(scope, folder):
+def folder_index(scope, *, context: Folder):
     sqlsession = scope.get(SQLSession)
-    query = select(Document).filter(Document.folder_id == folder.id)
+    query = select(Document).filter(Document.folder_id == context.id)
     documents = sqlsession.exec(query).all()
     return {
-        'context': folder,
+        'context': context,
         'documents': documents,
-        'path_for': path_for(scope, folder)
+        'path_for': path_for(scope, context)
     }
 
 
 @views.register(Application, '/create_folder', name='create_folder')
 class CreateFolder(Form):
 
-    schema = Folder.get_schema(exclude=("id",))
+    def get_schema(self, scope, *, context):
+        return Folder.get_schema(exclude=("id",))
 
     @trigger('save', 'Create new folder')
-    def save(self, scope, data, *, context):
-        form = self.get_form(scope, context)
+    def save(self, scope, data, *, context: Application):
+        form = self.get_form(scope, context=context)
         appstruct = form.validate(data)
         sqlsession = scope.get(SQLSession)
         sqlsession.add(
@@ -74,12 +75,16 @@ def deferred_choices_widget(node, kw):
 @views.register(Folder, '/create_document', name='create_document')
 class CreateDocument(Form):
 
-    schema = Document.get_schema(exclude=("id", "folder_id", "content"))
-    schema['type'].widget = deferred_choices_widget
+    def get_schema(self, scope, *, context):
+        schema = Document.get_schema(
+            exclude=("id", "folder_id", "content")
+        )
+        schema['type'].widget = deferred_choices_widget
+        return schema
 
     @trigger('save', 'Create new document')
     def save(self, scope, data, *, context):
-        form = self.get_form(scope, context)
+        form = self.get_form(scope, context=context)
         appstruct = form.validate(data)
         sqlsession = scope.get(SQLSession)
         sqlsession.add(
@@ -96,7 +101,7 @@ class CreateDocument(Form):
     requirements={"type": matchers.wildstr('schema2.1.2*')})
 @html
 def schema2_document_index(scope, *, context: Document):
-    return f"I use a schema2: {document.type}"
+    return f"I use a schema2: {context.type}"
 
 
 
@@ -105,4 +110,4 @@ def schema2_document_index(scope, *, context: Document):
     requirements={"type": matchers.value('schema1.1.0@reha')})
 @html
 def schema1_document_index(scope, context: Document):
-    return f"I use a schema1: {document.type}"
+    return f"I use a schema1: {context.type}"

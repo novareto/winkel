@@ -37,6 +37,6 @@ def path_for(scope, context):
             unmatched = {}
 
         view_path = root.views.route_for(target, name, **unmatched)
-        return root_path / factory_path / view_path
+        return '/' + (root_path / factory_path / view_path)
 
     return resolve_path

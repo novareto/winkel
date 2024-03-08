@@ -32,6 +32,7 @@ class Application(Root):
             scope,
             partial=True
         )
+
         if not view_path.startswith('/'):
             view_path = f'/{view_path}'
 
