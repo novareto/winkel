@@ -2,20 +2,18 @@ import typing as t
 from wrapt import ObjectProxy
 from pathlib import PurePosixPath
 from inspect import signature, _empty as empty, isclass
-from winkel.routing.router import Route
+from winkel.scope import Scope
 from winkel.datastructures import TypedSet
 from winkel.traversing.typed import TypedRouters
 
 
 class Traversed(ObjectProxy):
     __parent__: t.Any
-    __route__: Route
     __path__: str
 
-    def __init__(self, wrapped, *, parent: t.Any, route: Route, path: str):
+    def __init__(self, wrapped, *, parent: t.Any, path: str):
         super().__init__(wrapped)
         self.__parent__ = parent
-        self.__route__ = route
         if type(parent) is Traversed:
             self.__path__ = f"{parent.__path__}/{path}"
         else:
@@ -32,22 +30,22 @@ def paths(path: str) -> t.Tuple[str, str]:
 
 class Node:
 
-    def __init__(self, cls, route):
+    def __init__(self, cls, path):
         self.cls = cls
-        self.route = route
+        self.path = path
 
     def __hash__(self):
         return hash(self.cls)
 
     def __eq__(self, other):
         if isinstance(other, Node):
-            return self.cls == other.cls and self.route == other.route
+            return self.cls == other.cls and self.path == other.path
         elif isclass(other):
             return other == self.cls
         raise TypeError(f"Cannot establish equality between {self!r} and {other!r}")
 
     def __repr__(self):
-        return f'{self.cls} -> {self.route}'
+        return f'{self.cls} -> {self.path}'
 
 
 class ViewRegistry(TypedRouters):
@@ -62,33 +60,31 @@ class Traverser(TypedRouters):
         self._reverse: TypedSet[t.Any, Node] = TypedSet()
         super().__init__()
 
-    def add(self, root: t.Type[t.Any], path: str, factory: t.Callable, **kwargs):
+    def add(self, root: t.Type[t.Any], path: str, method, factory: t.Callable, **kwargs):
         sig = signature(factory)
         if sig.return_annotation is empty:
             raise TypeError('Factories need to specify a return type.')
-        route = self[root].add(path, factory, **kwargs)
-        self._reverse.add(sig.return_annotation, Node(root, route))
-        return route
+        self[root].add(path, method, factory, **kwargs)
+        self._reverse.add(sig.return_annotation, Node(root, path))
 
     def traverse(
             self,
             root: t.Any,
             path: str,
-            context: t.Optional[t.Mapping] = None,
+            method: str,
+            scope: Scope,
             partial: bool = None) -> t.Tuple[t.Any, str]:
 
         for stub, branch in paths(path):
             for matcher in self.lookup(root.__class__):
-                found = matcher.get(stub)
+                found = matcher.get(stub, method)
                 if found:
-                    resolved = found.handler(
-                        stub, root, context, **found.params)
-                    resolved = Traversed(
-                        resolved, parent=root, route=found.route, path=stub)
+                    resolved = found.routed(scope, root, **found.params)
+                    resolved = Traversed(resolved, parent=root, path=stub)
                     if not branch:
                         return resolved, ''
                     return self.traverse(
-                        resolved, branch, context=context, partial=partial)
+                        resolved, branch, method, scope, partial=partial)
         if partial:
             return root, path
         raise LookupError()
@@ -112,11 +108,9 @@ class Traverser(TypedRouters):
                 if candidate == node2:
                     current_path.append(candidate)
                     resolved = '/'
-                    params = []
                     for node in reversed(current_path[1:]):
-                        resolved += node.route.path
-                        params.extend(node.route.params.values())
-                    return resolved, params
+                        resolved += node.path
+                    return resolved
 
             # Add new paths
             for next_node in next_nodes:

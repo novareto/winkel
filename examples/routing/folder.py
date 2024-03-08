@@ -60,7 +60,7 @@ class CreateFolder(APIView):
         return Response.redirect(scope.environ.application_uri)
 
 
-@routes.register('/folders/<folder_id>', name="folder_view")
+@routes.register('/folders/{folder_id}', name="folder_view")
 @html
 @renderer(template='views/folder')
 def folder_view(scope):

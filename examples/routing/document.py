@@ -26,7 +26,7 @@ def document_creation_form(scope):
     return deform.form.Form(schema, buttons=(process_btn,))
 
 
-@routes.register('/folders/<folder_id>/new', name="document_create")
+@routes.register('/folders/{folder_id}/new', name="document_create")
 class CreateDocument(APIView):
 
     @html
@@ -68,7 +68,7 @@ class CreateDocument(APIView):
 
 
 @routes.register(
-    '/folders/<folder_id>/browse/<document_id>', name="document_view")
+    '/folders/{folder_id}/browse/{document_id}', name="document_view")
 @html
 @renderer(template='views/document')
 def document_view(scope):

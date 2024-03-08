@@ -16,11 +16,10 @@ def pass_through(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-@registry.register(Application, '/company/<company_id>', pipeline=(pass_through,))
+@registry.register(Application, '/company/{company_id}', pipeline=(pass_through,))
 def company_factory(
-        path: str, parent: Application, scope: Scope, *,
+        scope: Scope, parent: Application, *,
         company_id: str) -> Company:
-
     sqlsession = scope.get(SQLSession)
     params = scope.get(Params)
     params['company_id'] = company_id
@@ -28,9 +27,9 @@ def company_factory(
     return company
 
 
-@registry.register(Company, '/courses/<course_id>')
+@registry.register(Company, '/courses/{course_id}')
 def course_factory(
-        path: str, parent: Company, scope: Scope, *,
+        scope: Scope, parent: Company, *,
         course_id: str) -> Course:
 
     sqlsession = scope.get(SQLSession)
@@ -44,9 +43,9 @@ def course_factory(
     return course
 
 
-@registry.register(Course, '/sessions/<session_id>')
+@registry.register(Course, '/sessions/{session_id}')
 def session_factory(
-        path: str, parent: Course, scope: Scope, *,
+        scope: Scope, parent: Course,  *,
         session_id: str) -> Session:
 
     sqlsession = scope.get(SQLSession)

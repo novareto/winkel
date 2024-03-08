@@ -26,7 +26,11 @@ class Application(Root):
 
     def endpoint(self, scope: Scope) -> Response:
         leaf, view_path = self.factories.traverse(
-            self, scope.environ.path, scope, partial=True
+            self,
+            scope.environ.path,
+            'GET',
+            scope,
+            partial=True
         )
         if not view_path.startswith('/'):
             view_path = f'/{view_path}'
@@ -45,4 +49,4 @@ class Application(Root):
         params |= view.params
 
         scope.register(MatchedRoute, view)
-        return view.handler(scope, leaf)
+        return view.routed(scope, leaf)

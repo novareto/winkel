@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
+from autorouting import MatchedRoute
 from horseman.exceptions import HTTPError
 from winkel.app import Root
 from winkel.scope import Scope
 from winkel.response import Response
-from winkel.routing.router import Router, MatchedRoute, Params
+from winkel.routing.router import Router, Params
 
 
 @dataclass(kw_only=True)
@@ -30,4 +31,4 @@ class Application(Root):
         scope.register(MatchedRoute, route)
         scope.register(Params, route.params)
         self.notify('route.found', scope, route)
-        return route.handler(scope)
+        return route.routed(scope)
