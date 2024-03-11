@@ -84,12 +84,12 @@ class Root(RootNode, Eventful):
 
     def resolve(self, path: str, environ: Environ) -> Response:
         if self.mounts:
-            try:
-                mounted = self.mounts.resolve(path, environ)
-            except HTTPError:
-                pass
-            else:
-                return mounted.resolve(environ['PATH_INFO'], environ)
+            mounted, name, resolved_path = self.mounts.match(path)
+            if mounted:
+                if name:
+                    environ['SCRIPT_NAME'] += name
+                environ['PATH_INFO'] = resolved_path
+                return mounted.resolve(resolved_path, environ)
 
         scope = Scope(environ, provider=self.services.provider)
         with scope:
