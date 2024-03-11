@@ -7,6 +7,7 @@ from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
 from winkel.scope import Scope
 from winkel.response import Response
+from winkel.resources import NeededResources
 from winkel.service import Installable, Mountable
 from winkel.datastructures import PriorityChain
 from winkel.meta import Environ, ExceptionInfo
@@ -24,7 +25,9 @@ class Mounting(Mapping):
 
 @dataclass(kw_only=True)
 class Eventful:
-    events: dict = field(default_factory=partial(defaultdict, PriorityChain))
+    events: dict = field(
+        default_factory=partial(defaultdict, PriorityChain)
+    )
 
     def register_handler(self, name: str, order: int = 0):
         def handler_registration(handler):
@@ -36,7 +39,8 @@ class Eventful:
             for order, handler in self.events[name]:
                 response = handler(*args, **kwargs)
                 if response is not None:
-                    logger.debug(f'{name}: handler {handler!r} responded. Breaking early.')
+                    logger.debug(
+                        f'{name}: handler {handler!r} responded.')
                     return response
 
     def notify(self, name: str, *args, **kwargs):
@@ -57,6 +61,7 @@ class Root(RootNode, Eventful):
         self.services.add_scoped_by_factory(scoped.query)
         self.services.add_scoped_by_factory(scoped.cookies)
         self.services.add_scoped_by_factory(scoped.form_data)
+        self.services.add_scoped(NeededResources)
 
     def finalize(self):
         # everything that needs doing before serving requests.

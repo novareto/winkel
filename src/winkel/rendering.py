@@ -1,11 +1,11 @@
 import wrapt
 import functools
 from chameleon.zpt.template import PageTemplate
+from winkel.resources import NeededResources
 from winkel.response import Response
 from winkel.scope import Scope
-from winkel.ui import UI
 from winkel.services.translation import Translator, Locale
-from winkel.services.resources import NeededResources
+from winkel.ui import UI
 
 
 def renderer(wrapped=None, *,
@@ -90,7 +90,10 @@ def html(wrapped, instance, args, kwargs) -> Response:
             f'Unable to render type: {type(content)}.')
 
     scope = args[0]
+    ui = scope.get(UI)
     resources = scope.get(NeededResources)
+    if ui.resources:
+        resources.extendleft(ui.resources)
     content = resources.apply(content)
     return Response.html(body=content)
 

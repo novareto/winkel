@@ -1,84 +1,8 @@
-from typing import NamedTuple
 from pathlib import PurePosixPath, Path
 from pkg_resources import resource_filename
 from horseman.mapping import Mapping
 from horseman.types import Environ, StartResponse
-from collections import defaultdict
 from winkel.service import Installable, Mountable
-
-
-class JSResource(NamedTuple):
-    path: str | PurePosixPath
-    integrity: str | None = None
-    crossorigin: str | None = None
-
-    def __str__(self):
-        value = f'src="{self.path}"'
-        if self.crossorigin:
-            value += f'crossorigin="{self.crossorigin}"'
-        if self.integrity:
-            value += f'integrity="{self.integrity}"'
-        return f'''<script {value}></script>'''
-
-    def __bytes__(self):
-        return str(self).encode()
-
-
-class CSSResource(NamedTuple):
-    path: str | PurePosixPath
-    integrity: str | None = None
-    crossorigin: str | None = None
-
-    def __str__(self):
-        value = f'href="{self.path}"'
-        if self.crossorigin:
-            value += f'crossorigin="{self.crossorigin}"'
-        if self.integrity:
-            value += f'integrity="{self.integrity}"'
-        return f'''<link rel="stylesheet" {value} />'''
-
-    def __bytes__(self):
-        return str(self).encode()
-
-
-known_extensions = {
-    "js": JSResource,
-    "css": CSSResource
-}
-
-
-class NeededResources:
-    top: dict
-    bottom: dict
-
-    def __init__(self):
-        self.top = []
-        self.bottom = []
-
-    def add_resource(self, path: str, rtype: str, *,
-                     bottom: bool = False,
-                     integrity: str | None = None,
-                     crossorigin: str | None = None):
-        if factory := known_extensions.get(rtype):
-            if bottom:
-                self.bottom.append(factory(
-                    path, integrity=integrity, crossorigin=crossorigin
-                ))
-            else:
-                self.top.append(factory(
-                    path, integrity=integrity, crossorigin=crossorigin
-                ))
-
-    def apply(self, body: str | bytes):
-        if isinstance(body, str):
-            body = body.encode()
-        if self.top:
-            top = b''.join((bytes(r) for r in self.top))
-            body = body.replace(b'</head>', top + b'</head>', 1)
-        if self.bottom:
-            bottom = b''.join((bytes(r) for r in self.bottom))
-            body = body.replace(b'</body>', bottom + b'</body>', 1)
-        return body
 
 
 class Library:
@@ -134,13 +58,15 @@ class StaticAccessor(Mapping):
         self.by_path[library.base_path] = library
         super().__setitem__(name, library)
 
-    def add_static(self, name: str, base_path: str | PurePosixPath) -> Library:
+    def add_static(self,
+                   name: str,
+                   base_path: str | PurePosixPath) -> Library:
         resource = Path(base_path)
         name = name.lstrip('/')
         if not resource.exists():
             raise OSError(f'{resource} does not exist.')
         if not resource.is_dir():
-            raise TypeError(f'Library base path must be a directory.')
+            raise TypeError('Library base path must be a directory.')
         library = Library(name, base_path=resource)
         self[name] = library
         return library
@@ -160,16 +86,21 @@ class ResourceManager(StaticAccessor, Installable, Mountable):
 
     def install(self, services):
         services.add_instance(self, ResourceManager)
-        services.add_scoped(NeededResources)
 
     def get_package_static_uri(self, package_path: str):
         environ = {'SCRIPT_NAME': '', 'PATH_INFO': ''}
-        library = self.resolve('/'+package_path, environ)
-        uri = PurePosixPath(self.name) / environ['SCRIPT_NAME'].lstrip('/') / environ['PATH_INFO'].lstrip('/')
-        return uri
+        _ = self.resolve('/'+package_path, environ)
+        return (
+            PurePosixPath(self.name) /
+            environ['SCRIPT_NAME'].lstrip('/') /
+            environ['PATH_INFO'].lstrip('/')
+        )
 
     def get_static_uri(self, name: str, path: str):
         environ = {'SCRIPT_NAME': '', 'PATH_INFO': ''}
-        library = self.resolve(f'/{name}/{path}', environ)
-        uri = PurePosixPath(self.name) / environ['SCRIPT_NAME'].lstrip('/') / environ['PATH_INFO'].lstrip('/')
-        return uri
+        _ = self.resolve(f'/{name}/{path}', environ)
+        return (
+            PurePosixPath(self.name) /
+            environ['SCRIPT_NAME'].lstrip('/') /
+            environ['PATH_INFO'].lstrip('/')
+        )

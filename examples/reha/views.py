@@ -1,13 +1,11 @@
 import colander
 import deform
-import orjson
 import jsonschema_colander.types
-from sqlmodel import Session as SQLSession, select, update
+from sqlmodel import Session as SQLSession, select
 from winkel.traversing import Application
 from winkel.traversing.utils import path_for
 from winkel import Response, html, renderer
 from winkel.traversing.traverser import ViewRegistry
-from winkel.traversing.utils import path_for
 from winkel import matchers
 from winkel.form import Form, trigger
 
@@ -115,7 +113,6 @@ class EditDocument(Form):
     def save(self, scope, data, *, context):
         form = self.get_form(scope, context=context)
         appstruct = form.validate(data)
-        sqlsession = scope.get(SQLSession)
         context.content = appstruct
         resolver = path_for(scope, context)
         return Response.redirect(resolver(context, 'view'))

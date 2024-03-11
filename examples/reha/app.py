@@ -1,8 +1,8 @@
 import http_session_file
 import pathlib
 import logging.config
-from js.jquery import jquery
 from winkel.ui import UI
+from winkel.resources import CSSResource, JSResource
 from winkel.traversing import Application
 from winkel.templates import Templates
 from winkel.services.resources import ResourceManager
@@ -50,7 +50,25 @@ app.use(
         slots=ui.slots,
         subslots=ui.subslots,
         layouts=ui.layouts,
-        templates=Templates('templates')
+        templates=Templates('templates'),
+        resources={
+            CSSResource(
+                "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css",
+                integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC",
+                crossorigin="anonymous"
+            ),
+            CSSResource(
+                "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css",
+                integrity="sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd",
+                crossorigin="anonymous"
+            ),
+            JSResource(
+                "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js",
+                bottom=True,
+                integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM",
+                crossorigin="anonymous"
+            )
+        }
     )
 )
 

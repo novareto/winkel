@@ -11,8 +11,8 @@ from abc import ABC, abstractmethod
 from winkel.routing import APIView
 from winkel.meta import FormData
 from winkel.scope import Scope
-from winkel.services.resources import ResourceManager, NeededResources
-
+from winkel.resources import NeededResources
+from winkel.services.resources import ResourceManager
 
 
 class trigger(annotation):
