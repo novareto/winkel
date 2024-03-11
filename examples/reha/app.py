@@ -67,6 +67,11 @@ app.use(
                 bottom=True,
                 integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM",
                 crossorigin="anonymous"
+            ),
+            JSResource(
+                "https://code.jquery.com/jquery-3.7.1.min.js",
+                integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=",
+                crossorigin="anonymous"
             )
         }
     )

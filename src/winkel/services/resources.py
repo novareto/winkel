@@ -1,17 +1,20 @@
+import os
+from http import HTTPStatus
 from pathlib import PurePosixPath, Path
 from pkg_resources import resource_filename
 from horseman.mapping import Mapping
 from horseman.types import Environ, StartResponse
 from winkel.service import Installable, Mountable
+from mimetypes import guess_type
 
 
 class Library:
-    base_path: PurePosixPath
+    base_path: Path
     _resources: set[Path]
 
     def __init__(self,
                  name: str,
-                 base_path: str | PurePosixPath):
+                 base_path: str | Path):
         self.name = name
         base_path = Path(base_path)
         if not base_path.is_absolute():
@@ -34,13 +37,28 @@ class Library:
 
         if filepath not in self._resources:
             start_response('404 Not Found', [])
+            return [b'Nothing matches the given URI']
+
+        headers = []
+        stats = os.stat(filepath)
+        size = stats.st_size
+        headers.append(("Content-Length", str(size)))
+
+        content_type, encoding = guess_type(filepath)
+        if not content_type:
+            content_type = 'octet/steam'
+        elif content_type.startswith("text/") or \
+                content_type == "application/javascript":
+            content_type += "; charset=utf-8"
+
+        headers.append(("Content-Type", content_type))
+        start_response('200 OK', headers)
+
+        if environ['REQUEST_METHOD'] == "HEAD":
             return []
 
         filelike = filepath.open('rb')
         block_size = 4096
-        status = '200 OK'
-        response_headers = [('Content-type', 'octet/stream')]
-        start_response(status, response_headers)
         if 'wsgi.file_wrapper' in environ:
             return environ['wsgi.file_wrapper'](filelike, block_size)
         else:
@@ -60,7 +78,7 @@ class StaticAccessor(Mapping):
 
     def add_static(self,
                    name: str,
-                   base_path: str | PurePosixPath) -> Library:
+                   base_path: str | Path) -> Library:
         resource = Path(base_path)
         name = name.lstrip('/')
         if not resource.exists():
@@ -88,19 +106,11 @@ class ResourceManager(StaticAccessor, Installable, Mountable):
         services.add_instance(self, ResourceManager)
 
     def get_package_static_uri(self, package_path: str):
-        environ = {'SCRIPT_NAME': '', 'PATH_INFO': ''}
-        _ = self.resolve('/'+package_path, environ)
+        library, name, path = self.match('/' + package_path)
         return (
-            PurePosixPath(self.name) /
-            environ['SCRIPT_NAME'].lstrip('/') /
-            environ['PATH_INFO'].lstrip('/')
-        )
+            PurePosixPath(self.name) / name.lstrip('/') / path.lstrip('/'))
 
     def get_static_uri(self, name: str, path: str):
-        environ = {'SCRIPT_NAME': '', 'PATH_INFO': ''}
-        _ = self.resolve(f'/{name}/{path}', environ)
+        library, name, path = self.resolve(f'/{name}/{path}')
         return (
-            PurePosixPath(self.name) /
-            environ['SCRIPT_NAME'].lstrip('/') /
-            environ['PATH_INFO'].lstrip('/')
-        )
+            PurePosixPath(self.name) / name.lstrip('/') / path.lstrip('/'))
