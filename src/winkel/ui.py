@@ -95,12 +95,6 @@ class UI(Installable):
     layouts: Registry = field(default_factory=LayoutRegistry)
     templates: Templates = field(default_factory=Templates)
     macros: Templates = field(default_factory=Templates)
-    resources: Set[Group | Resource] = field(default_factory=set)
-
-    def inject_resources(self):
-        if self.resources:
-            for resource in self.resources:
-                resource.need()
 
     def install(self, services):
         services.register(UI, instance=self)

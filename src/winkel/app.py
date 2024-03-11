@@ -7,7 +7,7 @@ from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
 from winkel.scope import Scope
 from winkel.response import Response
-from winkel.service import Installable
+from winkel.service import Installable, Mountable
 from winkel.datastructures import PriorityChain
 from winkel.meta import Environ, ExceptionInfo
 from winkel import scoped
@@ -62,9 +62,12 @@ class Root(RootNode, Eventful):
         # everything that needs doing before serving requests.
         self.services.build_provider()
 
-    def use(self, *components: Installable):
+    def use(self, *components: Installable | Mountable):
         for component in components:
-            component.install(self.services)
+            if isinstance(component, Installable):
+                component.install(self.services)
+            if isinstance(component, Mountable):
+                component.mount(self.mounts)
 
     def handle_exception(self, exc_info: ExceptionInfo, environ: Environ):
         typ, err, tb = exc_info
@@ -76,8 +79,12 @@ class Root(RootNode, Eventful):
 
     def resolve(self, path: str, environ: Environ) -> Response:
         if self.mounts:
-            if (mounted := self.mounts.resolve(path, environ)) is not None:
-                return mounted.resolve(path, environ)
+            try:
+                mounted = self.mounts.resolve(path, environ)
+            except HTTPError:
+                pass
+            else:
+                return mounted.resolve(environ['PATH_INFO'], environ)
 
         scope = Scope(environ, provider=self.services.provider)
         with scope:

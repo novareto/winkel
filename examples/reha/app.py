@@ -1,13 +1,21 @@
 import http_session_file
 import pathlib
 import logging.config
-from fanstatic import Fanstatic
 from js.jquery import jquery
 from winkel.ui import UI
 from winkel.traversing import Application
 from winkel.templates import Templates
+from winkel.services.resources import ResourceManager
 from winkel import services
 import ui, views, store, factories
+
+
+here = pathlib.Path(__file__).parent.resolve()
+
+libraries = ResourceManager('/static')
+libraries.add_package_static('deform:static').finalize()
+libraries.add_static('example', here / 'static').finalize(('*',))
+
 
 
 app = Application(
@@ -19,6 +27,7 @@ app.services.add_instance(store.stores)
 
 
 app.use(
+    libraries,
     services.Transactional(),
     services.PostOffice(
         path='test.mail'
@@ -41,8 +50,7 @@ app.use(
         slots=ui.slots,
         subslots=ui.subslots,
         layouts=ui.layouts,
-        templates=Templates('templates'),
-        resources={jquery}
+        templates=Templates('templates')
     )
 )
 
@@ -78,4 +86,4 @@ logging.config.dictConfig({
 })
 
 app.finalize()
-wsgi_app = Fanstatic(app)
+wsgi_app = app

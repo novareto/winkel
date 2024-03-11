@@ -11,6 +11,8 @@ from abc import ABC, abstractmethod
 from winkel.routing import APIView
 from winkel.meta import FormData
 from winkel.scope import Scope
+from winkel.services.resources import ResourceManager, NeededResources
+
 
 
 class trigger(annotation):
@@ -60,7 +62,19 @@ class Form(APIView):
         if initial_data:
             appstruct = schema.deserialize(initial_data)
             form.set_appstruct(appstruct)
+        self.include_resources(scope, form)
         return form
+
+    def include_resources(self, scope, form):
+        resources_manager = scope.get(ResourceManager)
+        needed = scope.get(NeededResources)
+        for rtype, resources in form.get_widget_resources().items():
+            for resource in resources:
+                needed.add_resource(
+                    scope.environ.application_uri +
+                    str(resources_manager.get_package_static_uri(resource)),
+                    rtype
+                )
 
     @html
     @renderer
