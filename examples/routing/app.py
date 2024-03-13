@@ -1,20 +1,31 @@
 import http_session_file
 import pathlib
+import asyncio
 import vernacular
 import logging.config
-from fanstatic import Fanstatic
-from js.jquery import jquery
+import websockets
+from threading import Thread
 from winkel.ui import UI
 from winkel.routing import Application
 from winkel.templates import Templates
 from winkel.policies import NoAnonymous
+from winkel.resources import JSResource, CSSResource
 import register, login, views, actions, ui, folder, document, db
+from winkel.services.resources import ResourceManager
 from winkel.services import (
     Transactional, HTTPSessions, Flash, SessionAuthenticator,
     SQLDatabase, TranslationService, PostOffice
 )
 
 app = Application()
+
+
+here = pathlib.Path(__file__).parent.resolve()
+
+libraries = ResourceManager('/static')
+libraries.add_package_static('deform:static').finalize()
+libraries.add_static('example', here / 'static').finalize(('*',))
+
 
 app.services.register(actions.Actions, instance=actions.actions)
 app.router = (
@@ -36,6 +47,7 @@ app.register_handler('scope.init')(
 
 
 app.use(
+    libraries,
     Transactional(),
     PostOffice(
         path='test.mail'
@@ -53,7 +65,29 @@ app.use(
         subslots=ui.subslots,
         layouts=ui.layouts,
         templates=Templates('templates'),
-        resources={jquery}
+        resources={
+            CSSResource(
+                "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css",
+                integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC",
+                crossorigin="anonymous"
+            ),
+            CSSResource(
+                "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css",
+                integrity="sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd",
+                crossorigin="anonymous"
+            ),
+            JSResource(
+                "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js",
+                bottom=True,
+                integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM",
+                crossorigin="anonymous"
+            ),
+            JSResource(
+                "https://code.jquery.com/jquery-3.7.1.min.js",
+                integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=",
+                crossorigin="anonymous"
+            )
+        }
     ),
     HTTPSessions(
         store=http_session_file.FileStore(
@@ -104,4 +138,25 @@ logging.config.dictConfig({
 })
 
 app.finalize()
-wsgi_app = Fanstatic(app)
+
+
+async def websocket_handler(websocket):
+    async for message in websocket:
+        print(message)
+
+
+async def websocket_server(app: Application):
+    async with websockets.serve(websocket_handler, host="127.0.0.1", port=7000):
+        await asyncio.Future()  # run forever
+
+
+def background_loop(loop: asyncio.AbstractEventLoop, app: Application) -> None:
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(websocket_server(app))
+
+
+loop = asyncio.new_event_loop()
+t = Thread(target=background_loop, args=(loop, app), daemon=True)
+t.start()
+
+wsgi_app = app
