@@ -55,8 +55,7 @@ class StaticAccessor:
                     "size": stats.st_size,
                     "content_type": content_type
                 }
-                self.resources.add(
-                    str('/' / PurePosixPath(self.name) / uri), **info)
+                self.resources.add(str('/' / PurePosixPath(uri)), **info)
 
     def add_static(self, name: str, base_path: str | Path) -> Library:
         library = self.libraries[name] = Library(name, base_path)
@@ -81,7 +80,7 @@ class ResourceManager(StaticAccessor, Installable, Mountable):
         return PurePosixPath(self.name) / name.lstrip('/') / path.lstrip('/')
 
     def resolve(self, path_info, environ):
-        match, _ = self.resources.match(self.name + path_info)
+        match, _ = self.resources.match(path_info)
         if not match:
             return Response(status=404)
 
@@ -95,4 +94,3 @@ class ResourceManager(StaticAccessor, Installable, Mountable):
         if 'wsgi.file_wrapper' not in environ:
             return Response.from_file_path(match["filepath"], headers=headers)
         return FileWrapperResponse(match["filepath"], headers=headers)
-
