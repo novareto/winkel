@@ -1,92 +1,65 @@
 import os
-from http import HTTPStatus
 from pathlib import PurePosixPath, Path
 from pkg_resources import resource_filename
-from horseman.mapping import Mapping
-from horseman.types import Environ, StartResponse
+from winkel.response import Response, FileWrapperResponse
 from winkel.service import Installable, Mountable
 from mimetypes import guess_type
+from autoroutes import Routes
 
 
 class Library:
+    name: str
     base_path: Path
-    _resources: set[Path]
 
-    def __init__(self,
-                 name: str,
-                 base_path: str | Path):
-        self.name = name
-        base_path = Path(base_path)
-        if not base_path.is_absolute():
-            raise ValueError('Base path needs to be absolute.')
-        self.base_path = base_path
-        self._resources = set()
-
-    def finalize(self, restrict=('*.js', '*.css')):
-        self._resources = set()
-        if not restrict:
-            restrict = ('*',)
-        for matcher in restrict:
-            for path in self.base_path.rglob(matcher):
-                self._resources.add(path)
-
-    def __call__(self, environ: Environ, start_response: StartResponse):
-        path_info = environ.get(
-            'PATH_INFO', '').encode('latin-1').decode('utf-8') or '/'
-        filepath = self.base_path / PurePosixPath(path_info.lstrip('/'))
-
-        if filepath not in self._resources:
-            start_response('404 Not Found', [])
-            return [b'Nothing matches the given URI']
-
-        headers = []
-        stats = os.stat(filepath)
-        size = stats.st_size
-        headers.append(("Content-Length", str(size)))
-
-        content_type, encoding = guess_type(filepath)
-        if not content_type:
-            content_type = 'octet/steam'
-        elif content_type.startswith("text/") or \
-                content_type == "application/javascript":
-            content_type += "; charset=utf-8"
-
-        headers.append(("Content-Type", content_type))
-        start_response('200 OK', headers)
-
-        if environ['REQUEST_METHOD'] == "HEAD":
-            return []
-
-        filelike = filepath.open('rb')
-        block_size = 4096
-        if 'wsgi.file_wrapper' in environ:
-            return environ['wsgi.file_wrapper'](filelike, block_size)
-        else:
-            return iter(lambda: filelike.read(block_size), '')
-
-
-class StaticAccessor(Mapping):
-    by_path: dict
-
-    def __init__(self, *args, **kwargs):
-        self.by_path = {}
-        super().__init__(*args, **kwargs)
-
-    def __setitem__(self, name, library):
-        self.by_path[library.base_path] = library
-        super().__setitem__(name, library)
-
-    def add_static(self,
-                   name: str,
-                   base_path: str | Path) -> Library:
+    def __init__(self, name: str, base_path: str | Path, restrict=('*',)):
         resource = Path(base_path)
-        name = name.lstrip('/')
         if not resource.exists():
             raise OSError(f'{resource} does not exist.')
         if not resource.is_dir():
             raise TypeError('Library base path must be a directory.')
-        library = Library(name, base_path=resource)
-        self[name] = library
+        if not base_path.is_absolute():
+            raise ValueError('Base path needs to be absolute.')
+        self.name = name
+        self.base_path = base_path
+        self.restrictions = restrict
+
+    def resources(self):
+        for matcher in self.restrictions:
+            for path in self.base_path.rglob(matcher):
+                yield self.name / path.relative_to(self.base_path), path
+
+
+class StaticAccessor:
+    name: str
+    resources: Routes | None
+    libraries: dict[str, Library]
+
+    def __init__(self, name: str):
+        self.name = name
+        self.resources = None
+        self.libraries = dict()
+
+    def finalize(self):
+        self.resources = Routes()
+        for name, library in self.libraries.items():
+            for uri, full_path in library.resources():
+                stats = os.stat(full_path)
+                content_type, encoding = guess_type(full_path)
+                if not content_type:
+                    content_type = 'octet/steam'
+                elif content_type.startswith("text/") or \
+                        content_type == "application/javascript":
+                    content_type += "; charset=utf-8"
+                info = {
+                    "filepath": full_path,
+                    "size": stats.st_size,
+                    "content_type": content_type
+                }
+                self.resources.add(
+                    str('/' / PurePosixPath(self.name) / uri), **info)
+
+    def add_static(self, name: str, base_path: str | Path) -> Library:
+        library = self.libraries[name] = Library(name, base_path)
         return library
 
     def add_package_static(self, package_static: str):
@@ -98,19 +71,28 @@ class StaticAccessor(Mapping):
 
 class ResourceManager(StaticAccessor, Installable, Mountable):
 
-    def __init__(self, name: str, *args, **kwargs):
-        self.name = name
-        super().__init__(*args, **kwargs)
-
     def install(self, services):
         services.add_instance(self, ResourceManager)
 
     def get_package_static_uri(self, package_path: str):
-        library, name, path = self.match('/' + package_path)
-        return (
-            PurePosixPath(self.name) / name.lstrip('/') / path.lstrip('/'))
+        return PurePosixPath(self.name) / package_path
 
     def get_static_uri(self, name: str, path: str):
-        library, name, path = self.resolve(f'/{name}/{path}')
-        return (
-            PurePosixPath(self.name) / name.lstrip('/') / path.lstrip('/'))
+        return PurePosixPath(self.name) / name.lstrip('/') / path.lstrip('/')
+
+    def resolve(self, path_info, environ):
+        match, _ = self.resources.match(self.name + path_info)
+        if not match:
+            return Response(status=404)
+
+        headers = {
+            "Content-Length": str(match["size"]),
+            "Content-Type": match["content_type"]
+        }
+        if environ['REQUEST_METHOD'] == "HEAD":
+            return Response(200, headers=headers)
+
+        if 'wsgi.file_wrapper' not in environ:
+            return Response.from_file_path(match["filepath"], headers=headers)
+        return FileWrapperResponse(match["filepath"], headers=headers)
+

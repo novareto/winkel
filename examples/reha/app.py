@@ -13,9 +13,9 @@ import ui, views, store, factories
 here = pathlib.Path(__file__).parent.resolve()
 
 libraries = ResourceManager('/static')
-libraries.add_package_static('deform:static').finalize()
-libraries.add_static('example', here / 'static').finalize(('*',))
-
+libraries.add_package_static('deform:static')
+libraries.add_static('example', here / 'static')
+libraries.finalize()
 
 
 app = Application(
