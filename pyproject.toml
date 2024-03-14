@@ -29,7 +29,8 @@ dependencies = [
   # following the soon to be excised from the package
   "deform",
   "colander",
-  "func_annotator"
+  "func_annotator",
+  "pyjwt"
 ]
 
 [tool.setuptools.packages.find]

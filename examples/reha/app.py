@@ -6,6 +6,7 @@ from winkel.resources import CSSResource, JSResource
 from winkel.traversing import Application
 from winkel.templates import Templates
 from winkel.services.resources import ResourceManager
+from winkel.services.token import JWTService
 from winkel import services
 import ui, views, store, factories
 
@@ -14,7 +15,7 @@ here = pathlib.Path(__file__).parent.resolve()
 
 libraries = ResourceManager('/static')
 libraries.add_package_static('deform:static')
-libraries.add_static('example', here / 'static')
+libraries.add_static('example', here / 'static', restrict=('*.jpg',))
 libraries.finalize()
 
 
@@ -28,6 +29,10 @@ app.services.add_instance(store.stores)
 
 app.use(
     libraries,
+    JWTService(
+        private_key=here / 'identities' / 'jwt.priv',
+        public_key=here / 'identities' / 'jwt.pub'
+    ),
     services.Transactional(),
     services.PostOffice(
         path='test.mail'

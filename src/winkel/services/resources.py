@@ -57,15 +57,18 @@ class StaticAccessor:
                 }
                 self.resources.add(str('/' / PurePosixPath(uri)), **info)
 
-    def add_static(self, name: str, base_path: str | Path) -> Library:
-        library = self.libraries[name] = Library(name, base_path)
+    def add_static(self, name: str,
+                   base_path: str | Path, restrict=('*',)) -> Library:
+        library = self.libraries[name] = Library(
+            name, base_path, restrict=restrict
+        )
         return library
 
-    def add_package_static(self, package_static: str):
+    def add_package_static(self, package_static: str, restrict=('*',)):
         # package_static of form:  package_name:path
         pkg, resource_name = package_static.split(":")
         resource = Path(resource_filename(pkg, resource_name))
-        return self.add_static(package_static, resource)
+        return self.add_static(package_static, resource, restrict=restrict)
 
 
 class ResourceManager(StaticAccessor, Installable, Mountable):
