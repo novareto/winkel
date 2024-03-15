@@ -57,18 +57,28 @@ class StaticAccessor:
                 }
                 self.resources.add(str('/' / PurePosixPath(uri)), **info)
 
+    def add_library(self, library: Library, override: bool = False):
+        if library.name in self.libraries and not override:
+            raise KeyError(f"Library {library.name!r} already exists.")
+        self.libraries[library.name] = library
+
     def add_static(self, name: str,
-                   base_path: str | Path, restrict=('*',)) -> Library:
-        library = self.libraries[name] = Library(
-            name, base_path, restrict=restrict
-        )
+                   base_path: str | Path, restrict=('*',),
+                   override: bool = False) -> Library:
+        library = Library(name, base_path, restrict=restrict)
+        self.add_library(library, override=override)
         return library
 
-    def add_package_static(self, package_static: str, restrict=('*',)):
+    def add_package_static(self,
+                           package_static: str,
+                           restrict=('*',),
+                           override: bool = False
+                           ):
         # package_static of form:  package_name:path
         pkg, resource_name = package_static.split(":")
         resource = Path(resource_filename(pkg, resource_name))
-        return self.add_static(package_static, resource, restrict=restrict)
+        return self.add_static(
+            package_static, resource, restrict=restrict, override=override)
 
 
 class ResourceManager(StaticAccessor, Installable, Mountable):
