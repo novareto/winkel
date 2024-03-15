@@ -7,7 +7,8 @@ from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
 from winkel.scope import Scope
 from winkel.response import Response
-from winkel.service import Installable
+from winkel.resources import NeededResources
+from winkel.service import Installable, Mountable
 from winkel.datastructures import PriorityChain
 from winkel.meta import Environ, ExceptionInfo
 from winkel import scoped
@@ -24,7 +25,9 @@ class Mounting(Mapping):
 
 @dataclass(kw_only=True)
 class Eventful:
-    events: dict = field(default_factory=partial(defaultdict, PriorityChain))
+    events: dict = field(
+        default_factory=partial(defaultdict, PriorityChain)
+    )
 
     def register_handler(self, name: str, order: int = 0):
         def handler_registration(handler):
@@ -36,7 +39,8 @@ class Eventful:
             for order, handler in self.events[name]:
                 response = handler(*args, **kwargs)
                 if response is not None:
-                    logger.debug(f'{name}: handler {handler!r} responded. Breaking early.')
+                    logger.debug(
+                        f'{name}: handler {handler!r} responded.')
                     return response
 
     def notify(self, name: str, *args, **kwargs):
@@ -57,14 +61,18 @@ class Root(RootNode, Eventful):
         self.services.add_scoped_by_factory(scoped.query)
         self.services.add_scoped_by_factory(scoped.cookies)
         self.services.add_scoped_by_factory(scoped.form_data)
+        self.services.add_scoped(NeededResources)
 
     def finalize(self):
         # everything that needs doing before serving requests.
         self.services.build_provider()
 
-    def use(self, *components: Installable):
+    def use(self, *components: Installable | Mountable):
         for component in components:
-            component.install(self.services)
+            if isinstance(component, Installable):
+                component.install(self.services)
+            if isinstance(component, Mountable):
+                component.mount(self.mounts)
 
     def handle_exception(self, exc_info: ExceptionInfo, environ: Environ):
         typ, err, tb = exc_info
@@ -76,8 +84,13 @@ class Root(RootNode, Eventful):
 
     def resolve(self, path: str, environ: Environ) -> Response:
         if self.mounts:
-            if (mounted := self.mounts.resolve(path, environ)) is not None:
-                return mounted.resolve(path, environ)
+            try:
+                mounted = self.mounts.resolve(path, environ)
+            except HTTPError as err:
+                if err.status != 404:
+                    raise err
+            else:
+                return mounted.resolve(environ['PATH_INFO'], environ)
 
         scope = Scope(environ, provider=self.services.provider)
         with scope:

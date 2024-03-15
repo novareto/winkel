@@ -1,9 +1,9 @@
 import ast
 from dataclasses import dataclass, field
-from typing import Set, Any, NamedTuple
-from fanstatic import Group, Resource
+from typing import Any, NamedTuple
 from chameleon.codegen import template
 from chameleon.astutil import Symbol
+from winkel.resources import JSResource, CSSResource
 from winkel.registries import TypedRegistry, Registry
 from winkel.scope import Scope
 from winkel.templates import Templates, EXPRESSION_TYPES
@@ -95,12 +95,7 @@ class UI(Installable):
     layouts: Registry = field(default_factory=LayoutRegistry)
     templates: Templates = field(default_factory=Templates)
     macros: Templates = field(default_factory=Templates)
-    resources: Set[Group | Resource] = field(default_factory=set)
-
-    def inject_resources(self):
-        if self.resources:
-            for resource in self.resources:
-                resource.need()
+    resources: set[JSResource | CSSResource] = field(default_factory=set)
 
     def install(self, services):
         services.register(UI, instance=self)

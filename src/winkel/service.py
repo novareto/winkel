@@ -2,6 +2,12 @@ from typing import Type, ClassVar, Iterable
 from pydantic import BaseModel, ConfigDict
 from func_annotator import annotation
 
+class Mountable:
+    name: str
+
+    def mount(self, mounts):
+        mounts[self.name] = self
+
 
 class factory(annotation):
     name = '__scope_factory__'
