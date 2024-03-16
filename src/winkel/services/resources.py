@@ -1,17 +1,34 @@
 import os
+import base64
+import hashlib
+from typing import Sequence
 from pathlib import PurePosixPath, Path
 from pkg_resources import resource_filename
 from winkel.response import Response, FileWrapperResponse
 from winkel.service import Installable, Mountable
+from winkel.resources import Resource, known_extensions, NeededResources
 from mimetypes import guess_type
 from autoroutes import Routes
 
 
-class Library:
+def generate_sri(filepath: Path):
+    hashed = hashlib.sha256()
+    with filepath.open('rb') as f:
+        while True:
+            data = f.read(1024*32)
+            if not data:
+                break
+            hashed.update(data)
+    hashed = hashed.digest()
+    hash_base64 = base64.b64encode(hashed).decode('utf-8')
+    return 'sha256-{}'.format(hash_base64)
+
+
+class BaseLibrary:
     name: str
     base_path: Path
 
-    def __init__(self, name: str, base_path: str | Path, restrict=('*',)):
+    def __init__(self, name: str, base_path: str | Path):
         resource = Path(base_path)
         if not resource.exists():
             raise OSError(f'{resource} does not exist.')
@@ -21,12 +38,65 @@ class Library:
             raise ValueError('Base path needs to be absolute.')
         self.name = name
         self.base_path = base_path
+
+    def __iter__(self):
+        pass
+
+
+class DiscoveryLibrary(BaseLibrary):
+    name: str
+    base_path: Path
+
+    def __init__(self, name: str, base_path: str | Path, restrict=('*',)):
+        super().__init__(name, base_path)
         self.restrictions = restrict
 
-    def resources(self):
+    def __iter__(self):
         for matcher in self.restrictions:
             for path in self.base_path.rglob(matcher):
                 yield self.name / path.relative_to(self.base_path), path
+
+
+class Library(DiscoveryLibrary):
+
+    _resources: set
+    _by_name: dict[str, Resource]
+
+    def __init__(self, name: str, base_path: str | Path, restrict=('*',)):
+        self._resources = set()
+        self._by_name = {}
+        super().__init__(name, base_path, restrict=restrict)
+
+    def bind(self, path: str | PurePosixPath, *,
+             name: str | None = None,
+             bottom: bool = False,
+             dependencies: Sequence[Resource] | None = None):
+        fullpath = self.base_path / path
+        if not fullpath.is_file():
+            raise TypeError(f'{path} is not a file.')
+
+        if not fullpath.suffix:
+            raise NameError('Filename needs an extension.')
+
+        ext = fullpath.suffix[1:]
+        cls = known_extensions.get(ext)
+        if not cls:
+            raise TypeError('Unknown extension.')
+
+        integrity = generate_sri(fullpath)
+        if dependencies is not None:
+            dependencies = tuple(dependencies)
+        resource = cls(
+            f"/{self.name}/{path}",
+            bottom=bottom,
+            integrity=integrity,
+            dependencies=dependencies
+        )
+        self._resources.add(resource)
+        if name:
+            self._by_name[name] = resource
+        return resource
+
 
 
 class StaticAccessor:
@@ -42,7 +112,7 @@ class StaticAccessor:
     def finalize(self):
         self.resources = Routes()
         for name, library in self.libraries.items():
-            for uri, full_path in library.resources():
+            for uri, full_path in iter(library):
                 stats = os.stat(full_path)
                 content_type, encoding = guess_type(full_path)
                 if not content_type:
@@ -65,7 +135,7 @@ class StaticAccessor:
     def add_static(self, name: str,
                    base_path: str | Path, restrict=('*',),
                    override: bool = False) -> Library:
-        library = Library(name, base_path, restrict=restrict)
+        library = DiscoveryLibrary(name, base_path, restrict=restrict)
         self.add_library(library, override=override)
         return library
 
@@ -85,12 +155,10 @@ class ResourceManager(StaticAccessor, Installable, Mountable):
 
     def install(self, services):
         services.add_instance(self, ResourceManager)
+        services.add_scoped_by_factory(self.needed_resources)
 
-    def get_package_static_uri(self, package_path: str):
-        return PurePosixPath(self.name) / package_path
-
-    def get_static_uri(self, name: str, path: str):
-        return PurePosixPath(self.name) / name.lstrip('/') / path.lstrip('/')
+    def needed_resources(self, scope) -> NeededResources:
+        return NeededResources(self.name)
 
     def resolve(self, path_info, environ):
         match, _ = self.resources.match(path_info)

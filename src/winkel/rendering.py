@@ -1,5 +1,7 @@
 import wrapt
 import functools
+from typing import Sequence
+from winkel.resources import Resource
 from chameleon.zpt.template import PageTemplate
 from winkel.resources import NeededResources
 from winkel.response import Response
@@ -78,24 +80,38 @@ def renderer(wrapped=None, *,
     return rendering_wrapper(wrapped)
 
 
-@wrapt.decorator
-def html(wrapped, instance, args, kwargs) -> Response:
-    content = wrapped(*args, **kwargs)
+def html(wrapped=None, *,
+         resources: Sequence[Resource] | None = None):
+    @wrapt.decorator
+    def html_wrapper(wrapped, instance, args, kwargs) -> Response:
+        content = wrapped(*args, **kwargs)
 
-    if isinstance(content, Response):
-        return content
+        if isinstance(content, Response):
+            return content
 
-    if not isinstance(content, str):
-        raise TypeError(
-            f'Unable to render type: {type(content)}.')
+        if not isinstance(content, str):
+            raise TypeError(
+                f'Unable to render type: {type(content)}.')
 
-    scope = args[0]
-    ui = scope.get(UI)
-    resources = scope.get(NeededResources)
-    if ui.resources:
-        resources.extendleft(ui.resources)
-    content = resources.apply(content)
-    return Response.html(body=content)
+        scope = args[0]
+        ui = scope.get(UI)
+        needed_resources = scope.get(NeededResources, default=None)
+        if needed_resources is None:
+            print('No resource injection.')
+        else:
+            if ui.resources:
+                needed_resources.update(ui.resources)
+            if resources:
+                needed_resources.update(resources)
+            content = needed_resources.apply(
+                content, scope.environ.application_uri
+            )
+        return Response.html(body=content)
+
+    if wrapped is None:
+        return functools.partial(html, resources=resources)
+
+    return html_wrapper(wrapped)
 
 
 @wrapt.decorator

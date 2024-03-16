@@ -11,13 +11,14 @@ from winkel.form import Form, trigger
 
 from models import Folder, Document
 from store import Stores, SchemaKey
+from resources import somejs
 
 
 views = ViewRegistry()
 
 
 @views.register(Application, '/', name="view")
-@html
+@html(resources=[somejs])
 @renderer(template='views/index')
 def root_index(scope, *, context: Application):
     sqlsession = scope.get(SQLSession)

@@ -66,15 +66,11 @@ class Form(APIView):
         return form
 
     def include_resources(self, scope, form):
-        resources_manager = scope.get(ResourceManager)
-        needed = scope.get(NeededResources)
-        for rtype, resources in form.get_widget_resources().items():
-            for resource in resources:
-                needed.add_resource(
-                    scope.environ.application_uri +
-                    str(resources_manager.get_package_static_uri(resource)),
-                    rtype
-                )
+        needed = scope.get(NeededResources, default=None)
+        if needed is not None:
+            for rtype, resources in form.get_widget_resources().items():
+                for resource in resources:
+                    needed.add_resource(resource, rtype)
 
     @html
     @renderer

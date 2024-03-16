@@ -7,7 +7,6 @@ from horseman.exceptions import HTTPError
 from horseman.mapping import Mapping, Node, RootNode
 from winkel.scope import Scope
 from winkel.response import Response
-from winkel.resources import NeededResources
 from winkel.service import Installable, Mountable
 from winkel.datastructures import PriorityChain
 from winkel.meta import Environ, ExceptionInfo
@@ -61,7 +60,6 @@ class Root(RootNode, Eventful):
         self.services.add_scoped_by_factory(scoped.query)
         self.services.add_scoped_by_factory(scoped.cookies)
         self.services.add_scoped_by_factory(scoped.form_data)
-        self.services.add_scoped(NeededResources)
 
     def finalize(self):
         # everything that needs doing before serving requests.
