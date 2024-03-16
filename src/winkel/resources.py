@@ -110,17 +110,15 @@ class NeededResources(set[JSResource | CSSResource]):
 
         if isinstance(body, str):
             body = body.encode()
+
         top = b''
         bottom = b''
+        base_uri = multi_urljoin(application_uri, self.root)
         for resource in self.unfold():
             if resource.bottom:
-                bottom += resource.render(
-                    multi_urljoin(application_uri, self.root)
-                )
+                bottom += resource.render(base_uri)
             else:
-                top += resource.render(
-                    multi_urljoin(application_uri, self.root)
-                )
+                top += resource.render(base_uri)
         if top:
             body = body.replace(b'</head>', top + b'</head>', 1)
         if bottom:
