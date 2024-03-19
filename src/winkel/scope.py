@@ -21,14 +21,13 @@ def method_dependencies(
 
 
 class Scope(ActivationScope):
-    environ: WSGIEnvironWrapper
 
     def __init__(self,
-                 environ: Environ,
+                 environ: WSGIEnvironWrapper,
                  stack: ExitStack | None = None,
                  provider: Services | None = None,
                  scoped_services: t.Dict[type[T] | str, T] | None = None):
-        self.environ = WSGIEnvironWrapper(environ)
+        self.environ = environ
         self.provider = provider or Services()
         if scoped_services is None:
             scoped_services = {}

@@ -4,17 +4,16 @@ import typing as t
 import urllib.parse
 from collections.abc import Mapping
 from functools import cached_property
-from horseman.types import Environ
-from horseman.parsers import Data, parser
+from horseman.asgi.parsers import Data, parser
 from horseman.datastructures import Cookies, ContentType, Query
 from multidict import CIMultiDict
 from dataclasses import dataclass, field
 from rodi import Container
-
+from horseman.types import HTTPCode
 
 from http import HTTPStatus
-from horseman.response import Headers, Finisher, HeadersT, BodyT
-
+from horseman.wsgi.response import Headers, Finisher, HeadersT, BodyT
+from winkel.steam import Stream
 
 
 class Response:
@@ -54,7 +53,7 @@ class Response:
             self._finishers = t.Deque()
         self._finishers.append(task)
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, send, receive):
         headers = list(self.headers.coalesced_items())
         await send({
             'type': 'http.response.start',
@@ -63,7 +62,7 @@ class Response:
         })
         await send({
             'type': 'http.response.body',
-            'body': environ.application_uri.encode()
+            'body': self.body
         })
 
 
@@ -79,7 +78,7 @@ class immutable_cached_property(cached_property):
 
 class ASGIEnvironWrapper:
 
-    def __init__(self, environ):
+    def __init__(self, environ, stream: Stream):
         if isinstance(environ, ASGIEnvironWrapper):
             raise TypeError(
                 f'{self.__class__!r} cannot wrap a subclass of itself.')
@@ -87,6 +86,7 @@ class ASGIEnvironWrapper:
         self._headers = CIMultiDict(
             ((k.decode(), v) for k, v in environ['headers'])
         )
+        self.stream = stream
 
     def __setitem__(self, key: str, value: t.Any):
         raise NotImplementedError(f'{self!r} is immutable')
@@ -116,14 +116,12 @@ class ASGIEnvironWrapper:
         return self._environ['method'].upper()
 
     @immutable_cached_property
-    def body(self) -> t.BinaryIO:
-        return self._environ['wsgi.input']
+    def body(self) -> t.AsyncGenerator:
+        return self.stream
 
-    @immutable_cached_property
-    def data(self) -> Data:
+    async def get_data(self) -> Data:
         if self.content_type:
-            return parser.parse(
-                self._environ['wsgi.input'], self.content_type)
+            await parser.parse(self.body, self.content_type)
         return Data()
 
     @immutable_cached_property
@@ -181,22 +179,55 @@ class ASGIEnvironWrapper:
         return f"{self.application_uri}{path_info}"
 
 
+from winkel.routing.router import Router, Params
+from winkel import scoped
+from autorouting import MatchedRoute
+from horseman.exceptions import HTTPError
+
+
 @dataclass(kw_only=True)
 class ASGIApp:
 
     services: Container = field(default_factory=Container)
+    router: Router = field(default_factory=Router)
 
+    def __post_init__(self):
+        self.services.add_instance(self, self.__class__)
+        self.services.add_scoped_by_factory(scoped.query)
+        self.services.add_scoped_by_factory(scoped.cookies)
+        self.services.add_scoped_by_factory(scoped.form_data)
+        self.services.add_instance(self.router, Router)
 
-    async def __call__(
-        self,
-        scope: dict,
-        receive: Callable[[], Awaitable[dict]],
-        send: Callable[[dict], Awaitable[None]],
-    ) -> None:
+    def finalize(self):
+        # everything that needs doing before serving requests.
+        self.services.build_provider()
+        self.router.finalize()
+
+    async def endpoint(self, scope: Scope) -> Response:
+        route: MatchedRoute | None = self.router.get(
+            scope.environ.path,
+            scope.environ.method
+        )
+        if route is None:
+            raise HTTPError(404)
+
+        scope.register(MatchedRoute, route)
+        scope.register(Params, route.params)
+        return await route.routed(scope)
+
+    async def resolve(self, environ: dict):
+        scope = Scope(environ, provider=self.services.provider)
+        with scope:
+            with scope.stack:
+                return await self.endpoint(scope)
+
+    async def __call__(self,
+                       scope: dict,
+                       receive: Callable[[], Awaitable[dict]],
+                       send: Callable[[dict], Awaitable[None]]):
 
         scope_type = scope['type']
         asgi_info = scope.get('asgi', {'version': '2.0'})
-
 
         if scope_type != 'http':
             return
@@ -209,7 +240,6 @@ class ASGIApp:
         if first_event_type != 'http.request':
             raise RuntimeError('ouch.')
 
-        environ = ASGIEnvironWrapper(scope)
-        scope = Scope(environ, provider=self.services.provider)
-        with scope:
-            with scope.stack:
+        environ = ASGIEnvironWrapper(scope, Stream(receive, first_event))
+        response = await self.resolve(environ)
+        await response(send, receive)

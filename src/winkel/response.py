@@ -3,7 +3,7 @@ import orjson
 from pathlib import Path
 from http import HTTPStatus
 from horseman.types import HTTPCode
-from horseman.response import Headers, HeadersT, Response as BaseResponse
+from horseman.wsgi.response import Headers, HeadersT, Response as BaseResponse
 
 
 REDIRECT = frozenset((

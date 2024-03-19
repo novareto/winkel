@@ -4,7 +4,7 @@ from functools import partial
 from dataclasses import dataclass, field
 from rodi import Container
 from horseman.exceptions import HTTPError
-from horseman.mapping import Mapping, Node, RootNode
+from horseman.wsgi.mapping import Mapping, Node, RootNode
 from winkel.scope import Scope
 from winkel.response import Response
 from winkel.service import Installable, Mountable

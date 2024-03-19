@@ -9,7 +9,7 @@ from winkel.service import Configuration
 from winkel.response import Response
 from winkel.scope import Scope
 from winkel.cors import CORSPolicy
-from horseman.response import Headers
+from horseman.wsgi.response import Headers
 
 
 logger = logging.getLogger(__name__)

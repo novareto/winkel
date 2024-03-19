@@ -25,7 +25,7 @@ class APIView:
 
 @dispatch
 def get_routables(
-        view: types.FunctionType,
+        view: types.FunctionType | types.CoroutineType,
         methods: HTTPMethods | None = None):
 
     if methods is None:
