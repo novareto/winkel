@@ -97,7 +97,9 @@ def html(wrapped=None, *,
         ui = scope.get(UI)
         needed_resources = scope.get(NeededResources, default=None)
         if needed_resources is None:
-            print('No resource injection.')
+            # print('No resource injection.')
+            # Do log.
+            pass
         else:
             if ui.resources:
                 needed_resources.update(ui.resources)
