@@ -26,6 +26,7 @@ dependencies = [
   "content-negotiation",
   "autorouting",
   "plum-dispatch",
+  "pyhamcrest",
   # following the soon to be excised from the package
   "deform",
   "colander",

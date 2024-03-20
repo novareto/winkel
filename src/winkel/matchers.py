@@ -1,28 +1,18 @@
 import fnmatch
 from typing import Any
+from hamcrest.core.base_matcher import BaseMatcher
+from hamcrest.core.description import Description
 
 
-class wildstr:
-    __slots__ = ('value',)
+class match_wildcards(BaseMatcher):
 
     def __init__(self, value: str):
         self.value: str = value
 
-    def __eq__(self, other):
+    def describe_to(self, description: Description):
+        description.append_text(
+            'String matching a wilcards string '
+        ).append_text(self.value)
+
+    def _matches(self, other: str):
         return fnmatch.fnmatch(other, self.value)
-
-    def match(self, other):
-        return fnmatch.fnmatch(other, self.value)
-
-
-class value:
-    __slots__ = ('value',)
-
-    def __init__(self, value: Any):
-        self.value: Any = value
-
-    def __eq__(self, other: Any):
-        return self.value == other
-
-    def match(self, other: str):
-        return self.value == other

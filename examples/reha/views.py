@@ -1,6 +1,7 @@
 import colander
 import deform
 import jsonschema_colander.types
+from hamcrest import equal_to
 from sqlmodel import Session as SQLSession, select
 from winkel.traversing import Application
 from winkel.traversing.utils import path_for
@@ -121,7 +122,7 @@ class EditDocument(Form):
 
 @views.register(
     Document, '/', name="view",
-    requirements={"type": matchers.wildstr('schema2.1.2*')})
+    requirements={"type": matchers.match_wildcards('schema2.1.2*')})
 @html
 @renderer
 def schema2_document_index(scope, *, context: Document):
@@ -130,7 +131,7 @@ def schema2_document_index(scope, *, context: Document):
 
 @views.register(
     Document, '/', name="view",
-    requirements={"type": matchers.value('schema1.1.0@reha')})
+    requirements={"type": equal_to('schema1.1.0@reha')})
 @html
 @renderer
 def schema1_document_index(scope, context: Document):

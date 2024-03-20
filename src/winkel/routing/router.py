@@ -88,8 +88,14 @@ class Router(BaseRouter):
                 if pipeline:
                     endpoint = wrapper(pipeline, endpoint)
                 for verb in verbs:
-                    self.add(path, verb, endpoint,
-                             name=name, requirements=requirements, priority=priority)
+                    self.add(
+                        path,
+                        verb,
+                        endpoint,
+                        name=name,
+                        requirements=requirements,
+                        priority=priority
+                    )
             return value
         return routing
 
