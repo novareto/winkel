@@ -1,13 +1,15 @@
 from winkel.meta import HTTPSession
 from winkel.scope import Scope
-from winkel.service import Service, factory
+from winkel.service import ServiceManager, Configuration, factory
 from winkel.auth import Authenticator, Source, User, anonymous
 
 
-class SessionAuthenticator(Authenticator, Service):
+class SessionAuthenticator(Authenticator, ServiceManager, Configuration):
+    __dependencies__ = [HTTPSession]
+    __provides__ = [Authenticator, User]
+
     user_key: str
     sources: tuple[Source, ...]
-    __dependencies__ = [HTTPSession]
 
     def from_credentials(self,
                          scope: Scope, credentials: dict) -> User | None:

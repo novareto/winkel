@@ -9,7 +9,7 @@ from pydantic import computed_field
 from contextlib import contextmanager
 from transaction import TransactionManager
 from winkel.response import Response
-from winkel.service import Service, factory
+from winkel.service import ServiceManager, Configuration, factory
 
 
 logger = logging.getLogger(__name__)
@@ -41,9 +41,10 @@ class Mailman(list[Message]):
         self.append(msg)
 
 
-class PostOffice(Service):
-    path: Path
+class PostOffice(ServiceManager, Configuration):
     __provides__ = [Mailman]
+
+    path: Path
 
     @computed_field
     @cached_property

@@ -97,8 +97,8 @@ class UI(Installable):
     macros: Templates = field(default_factory=Templates)
     resources: set[JSResource | CSSResource] = field(default_factory=set)
 
-    def install(self, services):
-        services.register(UI, instance=self)
+    def install(self, application):
+        application.services.register(UI, instance=self)
         if 'slot' not in EXPRESSION_TYPES:
             EXPRESSION_TYPES['slot'] = SlotExpr
 

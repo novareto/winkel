@@ -2,7 +2,7 @@ import pathlib
 import jwt
 import logging
 from datetime import datetime, timedelta, timezone
-from winkel.service import Service, factory
+from winkel.service import ServiceManager, Configuration, factory
 from winkel.scope import Scope
 
 
@@ -50,7 +50,7 @@ class JWTManager:
             raise InvalidToken()
 
 
-class JWTService(Service):
+class JWTService(ServiceManager, Configuration):
 
     private_key: pathlib.Path
     public_key: pathlib.Path
@@ -67,5 +67,3 @@ class JWTService(Service):
             public_key_pem = f.read()
 
         return JWTManager(private_key_pem, public_key_pem)
-
-

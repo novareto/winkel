@@ -14,7 +14,7 @@ from winkel import scoped
 logger = logging.getLogger(__name__)
 
 
-class Mounting(Mapping):
+class Mounts(Mapping):
 
     def add(self, app: Node, path: str):
         self[path] = app
@@ -25,7 +25,7 @@ class Root(RootNode):
 
     services: Container = field(default_factory=Container)
     middlewares: list[HandlerWrapper] = field(default_factory=list)
-    mounts: Mounting = field(default_factory=Mounting)
+    mounts: Mounts = field(default_factory=Mounts)
 
     def __post_init__(self):
         self.services.add_instance(self, self.__class__)
@@ -39,12 +39,9 @@ class Root(RootNode):
         if self.middlewares:
             self.endpoint = wrapper(self.middlewares, self.endpoint)
 
-    def use(self, *components: Installable | Mountable):
+    def use(self, *components: Installable):
         for component in components:
-            if isinstance(component, Installable):
-                component.install(self.services)
-            if isinstance(component, Mountable):
-                component.mount(self.mounts)
+            component.install(self)
 
     def handle_exception(self, exc_info: ExceptionInfo, environ: Environ):
         typ, err, tb = exc_info

@@ -1,7 +1,7 @@
 import logging
 from annotated_types import Len
 from typing import NewType, List, Annotated
-from winkel.service import Service, factory
+from winkel.service import ServiceManager, Configuration, factory
 from vernacular import Translations
 from vernacular.translate import Translator
 from content_negotiation import decide_language, NoAgreeableLanguageError
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 Locale = NewType('Locale', str)
 
 
-class TranslationService(Service):
+class TranslationService(ServiceManager, Configuration):
     translations: Translations
     accepted_languages: Annotated[List[str], Len(min_length=1)]
     default_domain: str = 'default'

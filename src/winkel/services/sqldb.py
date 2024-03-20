@@ -5,12 +5,12 @@ from winkel.response import Response
 from pydantic import computed_field
 from sqlmodel import Session, SQLModel, create_engine
 from sqlalchemy.engine.base import Engine
-from winkel.service import Service, factory
+from winkel.service import ServiceManager, Configuration, factory
 from transaction import TransactionManager
 from contextlib import contextmanager
 
 
-class SQLDatabase(Service):
+class SQLDatabase(ServiceManager, Configuration):
 
     __provides__ = [Session]
 

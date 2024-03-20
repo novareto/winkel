@@ -5,7 +5,7 @@ from typing import Sequence
 from pathlib import PurePosixPath, Path
 from pkg_resources import resource_filename
 from winkel.response import Response, FileWrapperResponse
-from winkel.service import Installable, Mountable
+from winkel.service import Mountable, install_method
 from winkel.resources import Resource, known_extensions, NeededResources
 from mimetypes import guess_type
 from autoroutes import Routes
@@ -98,14 +98,13 @@ class Library(DiscoveryLibrary):
         return resource
 
 
-
 class StaticAccessor:
-    name: str
+    path: str
     resources: Routes | None
     libraries: dict[str, Library]
 
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self, path: str):
+        self.path = path
         self.resources = None
         self.libraries = dict()
 
@@ -151,14 +150,15 @@ class StaticAccessor:
             package_static, resource, restrict=restrict, override=override)
 
 
-class ResourceManager(StaticAccessor, Installable, Mountable):
+class ResourceManager(StaticAccessor, Mountable):
 
-    def install(self, services):
-        services.add_instance(self, ResourceManager)
-        services.add_scoped_by_factory(self.needed_resources)
+    @install_method(object)
+    def register_services(self, application):
+        application.services.add_instance(self, ResourceManager)
+        application.services.add_scoped_by_factory(self.needed_resources)
 
     def needed_resources(self, scope) -> NeededResources:
-        return NeededResources(self.name)
+        return NeededResources(self.path)
 
     def resolve(self, path_info, environ):
         match, _ = self.resources.match(path_info)
