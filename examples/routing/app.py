@@ -65,23 +65,27 @@ app.use(
         templates=Templates('templates'),
         resources={
             CSSResource(
-                "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css",
+                "/bootstrap@5.0.2/dist/css/bootstrap.min.css",
+                root="https://cdn.jsdelivr.net/npm",
                 integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC",
                 crossorigin="anonymous"
             ),
             CSSResource(
-                "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css",
+                "/bootstrap-icons@1.11.1/font/bootstrap-icons.css",
+                root="https://cdn.jsdelivr.net/npm",
                 integrity="sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd",
                 crossorigin="anonymous"
             ),
             JSResource(
-                "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js",
+                "/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js",
+                root="https://cdn.jsdelivr.net/npm",
                 bottom=True,
                 integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM",
                 crossorigin="anonymous"
             ),
             JSResource(
-                "https://code.jquery.com/jquery-3.7.1.min.js",
+                "/jquery-3.7.1.min.js",
+                root="https://code.jquery.com",
                 integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=",
                 crossorigin="anonymous"
             )
@@ -115,7 +119,7 @@ logging.config.dictConfig({
     },
     'handlers': {
         'default': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'formatter': 'standard',
             'class': 'logging.StreamHandler',
             'stream': 'ext://sys.stdout',  # Default is stderr
