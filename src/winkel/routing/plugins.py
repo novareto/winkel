@@ -1,4 +1,4 @@
-from winkel.service import Installable
+from winkel.service import Installable, install_method
 from winkel.routing import Router
 
 

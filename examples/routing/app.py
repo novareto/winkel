@@ -9,6 +9,8 @@ from winkel.ui import UI
 from winkel.routing import Application
 from winkel.templates import Templates
 from winkel.policies import NoAnonymous
+from winkel.service import Installable, install_method
+from winkel.routing.plugins import Routable
 from winkel.resources import JSResource, CSSResource
 import register, login, views, actions, ui, folder, document, db
 from winkel.services.resources import ResourceManager
@@ -33,10 +35,22 @@ libraries.add_static('example', here / 'static', restrict=('*.jpg',))
 libraries.finalize()
 
 
-app.services.register(actions.Actions, instance=actions.actions)
-app.router = (
-    register.routes | login.routes | views.routes | folder.routes | document.routes
-)
+class MyPlugin(Routable):
+
+    router = (
+        register.routes |
+        login.routes |
+        views.routes |
+        folder.routes |
+        document.routes
+    )
+
+    @install_method(object)
+    def add_actions(self, application):
+        application.services.register(
+            actions.Actions, instance=actions.actions
+        )
+
 
 vernacular.COMPILE = True
 i18Catalog = vernacular.Translations()
@@ -105,7 +119,8 @@ app.use(
         sources=[db.DBSource()],
         user_key="user"
     ),
-    Flash()
+    Flash(),
+    MyPlugin()
 )
 
 # Run once at startup:
