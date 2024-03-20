@@ -45,7 +45,7 @@ class MyPlugin(Routable):
         document.routes
     )
 
-    @install_method(object)
+    @install_method(Application)
     def add_actions(self, application):
         application.services.register(
             actions.Actions, instance=actions.actions
