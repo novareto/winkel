@@ -7,7 +7,7 @@ from winkel.response import Response
 from winkel.traversing.traverser import Traverser, ViewRegistry
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, repr=False)
 class Application(Root):
     factories: Traverser = field(default_factory=Traverser)
     views: ViewRegistry = field(default_factory=ViewRegistry)
@@ -20,9 +20,9 @@ class Application(Root):
 
     def finalize(self):
         # everything that needs doing before serving requests.
-        self.services.build_provider()
         self.factories.finalize()
         self.views.finalize()
+        super().finalize()
 
     def endpoint(self, scope: Scope) -> Response:
         leaf, view_path = self.factories.traverse(

@@ -17,7 +17,12 @@ from winkel.services import (
     SQLDatabase, TranslationService, PostOffice
 )
 
-app = Application()
+app = Application(middlewares=[
+    NoAnonymous(
+        login_url='/login',
+        allowed_urls={'/register', '/test'}
+    )
+])
 
 
 here = pathlib.Path(__file__).parent.resolve()
@@ -37,14 +42,6 @@ vernacular.COMPILE = True
 i18Catalog = vernacular.Translations()
 for translation in vernacular.translations(pathlib.Path('translations')):
     i18Catalog.add(translation)
-
-
-app.register_handler('scope.init')(
-    NoAnonymous(
-        login_url='/login',
-        allowed_urls={'/register', '/test'}
-    ).check_access
-)
 
 
 app.use(
@@ -118,7 +115,7 @@ logging.config.dictConfig({
     },
     'handlers': {
         'default': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'formatter': 'standard',
             'class': 'logging.StreamHandler',
             'stream': 'ext://sys.stdout',  # Default is stderr

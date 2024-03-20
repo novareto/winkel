@@ -1,5 +1,4 @@
 import fnmatch
-from typing import Any
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest.core.description import Description
 

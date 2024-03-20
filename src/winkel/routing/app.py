@@ -7,7 +7,7 @@ from winkel.response import Response
 from winkel.routing.router import Router, Params
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, repr=False)
 class Application(Root):
     router: Router = field(default_factory=Router)
 
@@ -17,8 +17,8 @@ class Application(Root):
 
     def finalize(self):
         # everything that needs doing before serving requests.
-        self.services.build_provider()
         self.router.finalize()
+        super().finalize()
 
     def endpoint(self, scope: Scope) -> Response:
         route: MatchedRoute | None = self.router.get(
@@ -30,5 +30,4 @@ class Application(Root):
 
         scope.register(MatchedRoute, route)
         scope.register(Params, route.params)
-        self.notify('route.found', scope, route)
         return route.routed(scope)
