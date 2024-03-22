@@ -5,7 +5,7 @@ from winkel.response import Response
 from pydantic import computed_field
 from sqlmodel import Session, SQLModel, create_engine
 from sqlalchemy.engine.base import Engine
-from winkel.service import ServiceManager, Configuration, factory
+from winkel.plugins import ServiceManager, Configuration, factory
 from transaction import TransactionManager
 from contextlib import contextmanager
 

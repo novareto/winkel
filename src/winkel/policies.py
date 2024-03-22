@@ -5,7 +5,7 @@ from pydantic import computed_field
 from horseman.exceptions import HTTPError
 from pathlib import PurePosixPath
 from winkel.auth import anonymous, User
-from winkel.service import Configuration
+from winkel.plugins import Configuration
 from winkel.response import Response
 from winkel.scope import Scope
 from winkel.cors import CORSPolicy

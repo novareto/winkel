@@ -7,7 +7,7 @@ from winkel.resources import JSResource, CSSResource
 from winkel.registries import TypedRegistry, Registry
 from winkel.scope import Scope
 from winkel.templates import Templates, EXPRESSION_TYPES
-from winkel.service import Installable
+from winkel.plugins import Installable
 from beartype import beartype
 
 

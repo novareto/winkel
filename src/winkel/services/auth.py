@@ -1,6 +1,6 @@
 from winkel.meta import HTTPSession
 from winkel.scope import Scope
-from winkel.service import ServiceManager, Configuration, factory
+from winkel.plugins import ServiceManager, Configuration, factory
 from winkel.auth import Authenticator, Source, User, anonymous
 
 

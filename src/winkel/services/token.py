@@ -2,7 +2,7 @@ import pathlib
 import jwt
 import logging
 from datetime import datetime, timedelta, timezone
-from winkel.service import ServiceManager, Configuration, factory
+from winkel.plugins import ServiceManager, Configuration, factory
 from winkel.scope import Scope
 
 

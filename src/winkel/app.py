@@ -6,7 +6,7 @@ from horseman.mapping import Mapping, Node, RootNode
 from winkel.pipeline import HandlerWrapper, wrapper
 from winkel.scope import Scope
 from winkel.response import Response
-from winkel.service import Installable, Mountable
+from winkel.plugins import Installable
 from winkel.meta import Environ, ExceptionInfo
 from winkel import scoped
 

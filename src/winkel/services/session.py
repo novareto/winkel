@@ -9,7 +9,7 @@ from http_session.meta import Store
 from transaction import TransactionManager
 from winkel.response import Response
 from winkel.scope import Scope
-from winkel.service import ServiceManager, Configuration, factory
+from winkel.plugins import ServiceManager, Configuration, factory
 from winkel.meta import HTTPSession
 
 

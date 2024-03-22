@@ -5,7 +5,7 @@ from typing import Sequence
 from pathlib import PurePosixPath, Path
 from pkg_resources import resource_filename
 from winkel.response import Response, FileWrapperResponse
-from winkel.service import Mountable, install_method
+from winkel.plugins import Mountable, install_method
 from winkel.resources import Resource, known_extensions, NeededResources
 from mimetypes import guess_type
 from autoroutes import Routes

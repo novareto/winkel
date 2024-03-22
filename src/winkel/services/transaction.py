@@ -3,7 +3,7 @@ from typing import Callable
 from contextlib import contextmanager
 from transaction import TransactionManager
 from winkel.response import Response
-from winkel.service import ServiceManager, Configuration, factory
+from winkel.plugins import ServiceManager, Configuration, factory
 
 
 logger = logging.getLogger(__name__)

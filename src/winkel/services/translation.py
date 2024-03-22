@@ -1,7 +1,7 @@
 import logging
 from annotated_types import Len
 from typing import NewType, List, Annotated
-from winkel.service import ServiceManager, Configuration, factory
+from winkel.plugins import ServiceManager, Configuration, factory
 from vernacular import Translations
 from vernacular.translate import Translator
 from content_negotiation import decide_language, NoAgreeableLanguageError

@@ -9,7 +9,7 @@ from winkel.ui import UI
 from winkel.routing import Application
 from winkel.templates import Templates
 from winkel.policies import NoAnonymous
-from winkel.service import Installable, install_method
+from winkel.plugins import Installable, install_method
 from winkel.routing.plugins import Routable
 from winkel.resources import JSResource, CSSResource
 import register, login, views, actions, ui, folder, document, db
